@@ -1,5 +1,4 @@
 # repository for atlantis related files
---------------------------------------------------------------
 
 (released) atlantis script(s): atlantis executor
 

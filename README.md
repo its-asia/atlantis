@@ -3,6 +3,8 @@
 repository for atlantis related files
 (released) atlantis scripts:
 
-: atlantis executor
+atlantis executor
 
+
+--------------------------------------------------------------
 (release date for admin source is not decided yet)

@@ -79,12 +79,16 @@ if not FileFunctions.isfolder('atlantis') then
 	FileFunctions.makefolder('atlantis')
 end
 
-if not FileFunctions.isfolder('atlantis/executor') then
-	FileFunctions.makefolder('atlantis/executor')
+if not FileFunctions.isfolder('atlantis/scripts') then
+	FileFunctions.makefolder('atlantis/scripts')
 end
 
-if not FileFunctions.isfolder('atlantis/executor/saves') then
-	FileFunctions.makefolder('atlantis/executor/saves')
+if not FileFunctions.isfolder('atlantis/scripts/executor') then
+	FileFunctions.makefolder('atlantis/scripts/executor')
+end
+
+if not FileFunctions.isfolder('atlantis/scripts/executor/saves') then
+	FileFunctions.makefolder('atlantis/scripts/executor/saves')
 end
 
 Atlantis.Gui = Instance.new('ScreenGui')
@@ -468,12 +472,12 @@ Atlantis.UIElements.UIListLayout_5.Parent = Atlantis.Frames.Scripts
 function Atlantis:Clear()
 	local TweenService = Services.TweenService
 	local Create = TweenService.Create
-	
+
 	local Time = .25
-	
+
 	Create(TweenService, Atlantis.Text.Lines, TweenInfo.new(Time), {TextTransparency = 1}):Play()
 	Create(TweenService, Atlantis.Text.Source, TweenInfo.new(Time), {TextTransparency = 1}):Play(); task.wait(Time); Atlantis.Text.Source.Text = ''
-	
+
 	Atlantis.Text.Source.TextTransparency = 0
 	Atlantis.Text.Lines.TextTransparency = 0
 end
@@ -481,32 +485,32 @@ end
 function Atlantis:Execute()
 	local Source = Atlantis.Text.Source.Text
 	local Format = 'Atlantis encountered an error:\n%s'
-	
+
 	xpcall(function()
 		loadstring(Source)()
 	end, function(Error)
 		if not printconsole then
 			warn(string.format(Format, Error))
-			
+
 			return
 		end
-		
+
 		printconsole(string.format(Format, Error), 255, 0, 0)
 	end)
 end
 
 function Atlantis:Save()
 	local Source = Atlantis.Text.Source.Text
-	local Format = 'atlantis/executor/saves/%s.lua'
+	local Format = 'atlantis/scripts/executor/saves/%s.lua'
 
 	if Atlantis.Frames.NameInput.Visible == true then return end
 
 	Atlantis.Frames.NameInput.Visible = true
 	Atlantis.Text.Finalize.MouseButton1Click:Wait()
-	
+
 	local FileName = Atlantis.Text.Input.Text
 	local FilePath = string.format(Format, FileName)
-	
+
 	FileFunctions.writefile(FilePath, Source)
 	Atlantis:AddToScripts(FilePath)
 
@@ -516,8 +520,8 @@ end
 
 function Atlantis:Delete()
 	local Source = Atlantis.Text.Source.Text
-	local Format = 'atlantis/executor/saves/%s.lua'
-	
+	local Format = 'atlantis/scripts/executor/saves/%s.lua'
+
 	if Atlantis.Frames.NameInput.Visible == true then return end
 
 	Atlantis.Frames.NameInput.Visible = true
@@ -525,16 +529,16 @@ function Atlantis:Delete()
 
 	local FileName = Atlantis.Text.Input.Text
 	local FilePath = string.format(Format, FileName)
-	
+
 	if FileFunctions.isfile(FilePath) then
 		FileFunctions.delfile(FilePath)
 		Atlantis.CachedPaths[FilePath] = nil
-		
+
 		if Atlantis.Frames.Scripts:FindFirstChild(FileName) then
 			Atlantis.Frames.Scripts:FindFirstChild(FileName):Destroy()
 		end
 	end
-	
+
 	Atlantis.Text.Input.Text = ''
 	Atlantis.Frames.NameInput.Visible = false
 end
@@ -545,19 +549,19 @@ function Atlantis:Close()
 	end, function()
 		warn(Atlantis.LocalPlayer.Name .. ' is not using synapse x!')
 	end)
-	
+
 	Atlantis.Gui:Destroy()
 end
 
 function Atlantis:AddToScripts(Path)
 	Path = Path:gsub('\\', '/')
-	
+
 	if Atlantis.CachedPaths[Path] == true then
 		return
 	else
 		Atlantis.CachedPaths[Path] = true
 	end
-	
+
 	local PathTable = Path:split('/')
 
 	local FileNameFull = PathTable[#PathTable]
@@ -567,7 +571,7 @@ function Atlantis:AddToScripts(Path)
 
 	ScriptButton.Text = FileName
 	ScriptButton.Name = FileName
-	
+
 	ScriptButton.MouseButton1Click:Connect(function()
 		if not FileFunctions.isfile(Path) then
 			ScriptButton:Destroy()
@@ -619,7 +623,7 @@ end, function()
 	warn(Atlantis.LocalPlayer.Name .. ' is not using synapse x!')
 end)
 
-local Files = FileFunctions.listfiles('atlantis/executor/saves')
+local Files = FileFunctions.listfiles('atlantis/scripts/executor/saves')
 for _, FilePath in pairs(Files) do
 	Atlantis:AddToScripts(FilePath)
 end

@@ -1,1 +1,1 @@
-x
+folder to hold assets used by atlantis scripts

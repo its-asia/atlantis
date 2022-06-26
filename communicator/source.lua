@@ -18,7 +18,7 @@ local Atlantis = {
 	Event = SentEvent,
 	Sent = SentEvent.Event,
 
-	Debug = true,
+	Debug = false,
 }
 
 local ConsoleHider = tostring(game.PlaceId * .5)

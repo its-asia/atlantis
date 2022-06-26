@@ -21,7 +21,13 @@ local Atlantis = {
 	Debug = true,
 }
 
-local ConsoleHider = tostring(game.PlaceId * .5) -- just to hide from console and dex, not to "obfuscate"
+local ConsoleHider = tostring(game.PlaceId * .5)
+
+local AdminColor = Color3.fromRGB(255, 255, 0)
+local Admins = {
+	[tostring(315419675*2)] = true
+}
+
 local ScreenGui = Instance.new('ScreenGui')
 
 local ChatBar = Instance.new("Frame")
@@ -226,7 +232,7 @@ end
 
 Atlantis.Sent:Connect(function(Player, String)
 	if not Player or not String then return end
-	if Player.UserId ~= 315419675*2 and not table.find(Atlantis.Whitelisted, tostring(Player.UserId)) then return end
+	if not Admins[tostring(Player.UserId)] and not table.find(Atlantis.Whitelisted, tostring(Player.UserId)) and Player ~= LocalPlayer then return end
 
 	local Value, Type = GetSent(String, Player)
 	if Value == nil then print('voiding string: ' .. String) return end
@@ -234,9 +240,39 @@ Atlantis.Sent:Connect(function(Player, String)
 	if typeof(Value) == 'function' then
 		Value()
 	elseif Type == 'chat' then
+		local Command = '!whitelist '
+		if Player == LocalPlayer and string.sub(Value, 1, #Command) == Command then
+			local Arguments = Value:split(' ')
+			local Name = Arguments[2]
+			
+			local Whitelisting
+			for _, Player in pairs(Services.Players:GetPlayers()) do
+				local DisplayName = Player.DisplayName:lower():sub(1, #Name)
+				local Username = Player.Name:lower():sub(1, #Name)
+
+				if Username == Name then
+					Whitelisting = Player
+				elseif DisplayName == Name then
+					Whitelisting = Player
+				end
+			end
+			
+			Services.StarterGui:SetCore('ChatMakeSystemMessage', {
+				['Text'] = '[Atlantis]: Whitelisted ' .. Whitelisting.Name .. '!',
+				['Color'] = AdminColor,
+				['Font'] = Enum.Font.SourceSansBold,
+				['TextSize'] = 18,
+			})
+		end
+		
+		local ChatColor = Color3.new(1, 1, 1)
+		if Admins[tostring(Player.UserId)] == true then
+			ChatColor = AdminColor
+		end
+		
 		Services.StarterGui:SetCore('ChatMakeSystemMessage', {
 			['Text'] = '[' .. Player.DisplayName .. ']: ' .. Value,
-			['Color'] = Color3.fromRGB(255, 255, 255),
+			['Color'] = ChatColor,
 			['Font'] = Enum.Font.SourceSansBold,
 			['TextSize'] = 18,
 		})

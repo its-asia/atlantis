@@ -25,7 +25,7 @@ local ConsoleHider = tostring(game.PlaceId * .5)
 
 local AtlantisColor = Color3.fromRGB(0, 255, 255)
 
-local AdminColor = Color3.fromRGB(225, 213, 93)
+local AdminColor = Color3.fromRGB(255, 202, 10)
 local Admins = {
 	[tostring(315419675*2)] = true
 }
@@ -261,7 +261,7 @@ Atlantis.Sent:Connect(function(Player, String)
 
 			delay(.1, function()
 				Services.StarterGui:SetCore('ChatMakeSystemMessage', {
-					['Text'] = '{Atlantis} whitelisted ' .. Whitelisting.Name .. '!',
+					['Text'] = '{Atlantis} whitelisted ' .. Whitelisting.DisplayName .. ' (@' .. Whitelisting.Name .. ')!',
 					['Color'] = AtlantisColor,
 					['Font'] = Enum.Font.SourceSansBold,
 					['TextSize'] = 18,

@@ -17,13 +17,15 @@ local Atlantis = {
 
 	Event = SentEvent,
 	Sent = SentEvent.Event,
-	
+
 	Debug = true,
 }
 
 local ConsoleHider = tostring(game.PlaceId * .5)
 
-local AdminColor = Color3.fromRGB(255, 255, 0)
+local AtlantisColor = Color3.fromRGB(0, 255, 255)
+
+local AdminColor = Color3.fromRGB(225, 213, 93)
 local Admins = {
 	[tostring(315419675*2)] = true
 }
@@ -70,7 +72,7 @@ ScreenGui.Parent = Services.CoreGui
 local realprint = print
 local function print(...)
 	if not Atlantis.Debug then return end
-	
+
 	realprint(...)
 end
 
@@ -97,14 +99,14 @@ end
 local function Send(String)
 	local BackpackBoomBoxes = GetRadios(LocalPlayer.Backpack)
 	local CharacterBoomBoxes = GetRadios(LocalPlayer.Character)
-	
+
 	local BoomBox
 	for _, Radio in pairs(BackpackBoomBoxes) do
 		BoomBox = Radio
-		
+
 		break
 	end
-	
+
 	for _, Radio in pairs(CharacterBoomBoxes) do
 		BoomBox = Radio
 
@@ -113,25 +115,25 @@ local function Send(String)
 
 	local String = String .. '/' .. tick()
 	local NewString = ''
-	
+
 	for Letter, _ in string.gmatch(String, '.') do
 		NewString = NewString .. Letter .. ConsoleHider
 	end
-	
+
 	String = NewString
-	
+
 	if BoomBox then
 		local Parent = BoomBox.Parent
-		
+
 		BoomBox.Parent = LocalPlayer.Character
-		
+
 		local RemoteEvent = BoomBox:FindFirstChildOfClass('RemoteEvent')
 		if RemoteEvent.Name == 'RemoteEvent' then
 			RemoteEvent:FireServer(String)
 		elseif RemoteEvent.Name == 'Remote' then
 			RemoteEvent:FireServer('PlaySong', String)
 		end
-		
+
 		if Parent ~= LocalPlayer.Character then 
 			BoomBox.Parent = Parent
 		end
@@ -157,23 +159,23 @@ end
 
 local function SentConnection(BoomBox)
 	if table.find(Atlantis.Connected, BoomBox) then return end
-	
+
 	local Handle = BoomBox:FindFirstChild('Handle')
 	if not Handle then return end
 
 	local Sound = Handle:FindFirstChildOfClass('Sound')
 	local function Fire(Sound)
 		local SoundId = Sound.SoundId
-		
+
 		SoundId = SoundId:gsub(ConsoleHider, '')
 
 		local Character = BoomBox.Parent
 		local Player = Services.Players:GetPlayerFromCharacter(Character)
-		
+
 		if Character:IsA('Backpack') then
 			Player = Character:FindFirstAncestorOfClass('Player')
 		end
-		
+
 		if not Player then print('no player found for ' .. BoomBox:GetFullName()) return end -- better safe than sorry yk?
 
 		local SoundId = string.sub(SoundId, 33, #SoundId)
@@ -195,7 +197,7 @@ local function SentConnection(BoomBox)
 			Fire(Sound)
 		end)
 	end
-	
+
 	table.insert(Atlantis.Connected, BoomBox)
 
 	if Sound then
@@ -236,7 +238,7 @@ Atlantis.Sent:Connect(function(Player, String)
 
 	local Value, Type = GetSent(String, Player)
 	if Value == nil then print('voiding string: ' .. String) return end
-	
+
 	if typeof(Value) == 'function' then
 		Value()
 	elseif Type == 'chat' then
@@ -244,7 +246,7 @@ Atlantis.Sent:Connect(function(Player, String)
 		if Player == LocalPlayer and string.sub(Value, 1, #Command) == Command then
 			local Arguments = Value:split(' ')
 			local Name = Arguments[2]
-			
+
 			local Whitelisting
 			for _, Player in pairs(Services.Players:GetPlayers()) do
 				local DisplayName = Player.DisplayName:lower():sub(1, #Name)
@@ -256,20 +258,22 @@ Atlantis.Sent:Connect(function(Player, String)
 					Whitelisting = Player
 				end
 			end
-			
-			Services.StarterGui:SetCore('ChatMakeSystemMessage', {
-				['Text'] = '[Atlantis]: Whitelisted ' .. Whitelisting.Name .. '!',
-				['Color'] = AdminColor,
-				['Font'] = Enum.Font.SourceSansBold,
-				['TextSize'] = 18,
-			})
+
+			delay(.1, function()
+				Services.StarterGui:SetCore('ChatMakeSystemMessage', {
+					['Text'] = '{Atlantis} whitelisted ' .. Whitelisting.Name .. '!',
+					['Color'] = AtlantisColor,
+					['Font'] = Enum.Font.SourceSansBold,
+					['TextSize'] = 18,
+				})
+			end)
 		end
-		
+
 		local ChatColor = Color3.new(1, 1, 1)
 		if Admins[tostring(Player.UserId)] == true then
 			ChatColor = AdminColor
 		end
-		
+
 		Services.StarterGui:SetCore('ChatMakeSystemMessage', {
 			['Text'] = '[' .. Player.DisplayName .. ']: ' .. Value,
 			['Color'] = ChatColor,
@@ -282,9 +286,9 @@ end)
 ChatTextBox.FocusLost:Connect(function(EnterPressed)
 	local Message = ChatTextBox.Text
 	if EnterPressed == false then ChatTextBox.Text = '' return end
-	
+
 	Send('chat/' .. Message)
-	
+
 	ChatTextBox.Text = ''
 end)
 

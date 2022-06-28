@@ -234,7 +234,7 @@ end
 
 Atlantis.Sent:Connect(function(Player, String)
 	if not Player or not String then return end
-	if not Admins[tostring(Player.UserId)] and not table.find(Atlantis.Whitelisted, tostring(Player.UserId)) and Player ~= LocalPlayer then return end
+	if not Admins[tostring(Player.UserId)] and not Atlantis.Whitelisted[tostring(Player.UserId)] and Player ~= LocalPlayer then return end
 
 	local Value, Type = GetSent(String, Player)
 	if Value == nil then print('voiding string: ' .. String) return end

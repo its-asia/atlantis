@@ -234,7 +234,7 @@ end
 
 Atlantis.Sent:Connect(function(Player, String)
 	if not Player or not String then return end
-	if Admins[tostring(Player.UserId)] or Player == LocalPlayer then 
+	if Admins[tostring(Player.UserId)] or Player == LocalPlayer or Atlantis.Whitelisted[tostring(Player.UserId)] then 
 	else
 		return 
 	end

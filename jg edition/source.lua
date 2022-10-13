@@ -1,4 +1,4 @@
-local AutoFocus = true -- whether or not to auto focus custom chat bar when you press /
+_G.AutoFocus = _G.AutoFocus or true -- whether or not to auto focus custom chat bar when you press /
 
 -- end of settings
 
@@ -194,11 +194,13 @@ end
 local function getMessageFromError(text)
 	local split = text:split(splitHeader)
 
-	local address = split[1] -- we dont need rbxassetid:// equivalent lmao
+	local address = split[1] -- the roblox.com address gets removed by the reciever so it doesnt really matter lol
 	if not address then return end
 
-	local message = split[2]:gsub(messageTroller, '') -- usually the message, if some moron decides to use |AAsplit| in their message kinda their fault lol
+	local message = split[2] -- usually the message, if some moron decides to use |AAsplit| in their message kinda their fault lol
 	if not message then return end
+	
+	message = message:gsub(messageTroller, '') -- removes the thing we use to hide our messages, wouldn't want a skid checking console!
 
 	local when = split[3] -- when the message happened (local time)
 	if not when then return end

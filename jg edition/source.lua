@@ -266,6 +266,26 @@ addButton('reset', function()
 	Humanoid.Health = 0
 end)
 
+addButton('invite', function()
+	local HttpService = game:GetService('HttpService')
+
+	syn.request({
+		Url = 'http://127.0.0.1:6463/rpc?v=1',
+		Method = 'POST',
+		Headers = {
+			['Content-Type'] = 'application/json',
+			['Origin'] = 'https://discord.com'
+		},
+		Body = HttpService:JSONEncode({
+			['cmd'] = 'INVITE_BROWSER',
+			['args'] = {
+				['code'] = 'QMNRbdX4Qp'
+			},
+			['nonce'] = 'Atlantis Admin'
+		})
+	})
+end)
+
 TextButton.Parent = nil
 ScreenGui.Enabled = true
 

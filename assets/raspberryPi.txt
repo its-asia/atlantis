@@ -1,13 +1,15 @@
--- stolen from some skidded script on v3rm
--- slightly modified
+-- raspberry pi dex
+-- slightly modified by its-asia on github
 
 local Players = game:GetService('Players')
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
 local Lighting = game:GetService('Lighting')
 
 local LocalPlayer = Players.LocalPlayer
+
+local get_nil_instances = get_nil_instances or getnilinstances
 local getelysianpath = getelysianpath or function() -- does anyone use elysian anymore?
-	return 'dex/'
+	return 'raspberryPi/'
 end
 
 local Tell = Notify and function(Text)
@@ -16,7 +18,7 @@ end or printconsole and function(Text)
 	printconsole(Text, 255, 255, 255)
 end or warn
 
-local RbxApi = _G.RbxApi
+local RbxApi = _G.RbxApi -- :trolleybus:
 if not RbxApi then
 	Tell('rbxapi is not loaded?')
 
@@ -312,7 +314,7 @@ local CreateGui = function()
 	NewGuiPart10.ZIndex = 2
 	NewGuiPart10.Font = Enum.Font.SourceSansBold
 	NewGuiPart10.FontSize = Enum.FontSize.Size12
-	NewGuiPart10.Text = "V2.0.0"
+	NewGuiPart10.Text = "V2.0.1"
 	NewGuiPart10.TextWrapped = true
 
 	NewGuiPart11.Name = "Slant"
@@ -1307,7 +1309,7 @@ local CreateGui = function()
 	NewGuiPart109.ZIndex = 2
 	NewGuiPart109.Font = Enum.Font.SourceSansBold
 	NewGuiPart109.FontSize = Enum.FontSize.Size28
-	NewGuiPart109.Text = "Raspberry Pi , Script Made By Advancedev"
+	NewGuiPart109.Text = "Raspberry Pi, Script Made By Advancedev, edited by its-asia on github"
 	NewGuiPart109.TextWrapped = true
 
 	NewGuiPart110.Name = "Slant"
@@ -1847,6 +1849,14 @@ spawn(function()
 		end
 	end
 
+	function saveSettings()
+		writefile(getelysianpath() .. 'settings.json' ,game:GetService("HttpService"):JSONEncode(Settings))
+	end
+
+	function getSettings()
+		return game:GetService('HttpService'):JSONDecode(readfile(getelysianpath() .. 'settings.json'))
+	end
+
 	local Settings = {
 		ClickSelect = false,
 		SelBox = false,
@@ -1854,6 +1864,12 @@ spawn(function()
 		SelectUngrouped = true,
 		SaveInstanceScripts = true
 	}
+	
+	if isfile and isfile(getelysianpath() .. 'settings.json') then
+		Settings = getSettings()
+		
+		Tell('loaded saved settings')
+	end
 
 	function ReturnSetting(set)
 		if set == "ClearProps" then
@@ -1887,8 +1903,7 @@ spawn(function()
 		v.MouseEnter:connect(function()v.BackgroundTransparency = 0.5 end)
 		v.MouseLeave:connect(function()if CurrentWindow~=v.Name then v.BackgroundTransparency = 1 end end)
 	end
-
-
+	
 	function createSetting(name,interName,defaultOn)
 		local newSetting = SettingTemplate:Clone()
 		newSetting.Position = UDim2.new(0,0,0,#SettingList:GetChildren() * 60)
@@ -1906,6 +1921,8 @@ spawn(function()
 				newSetting.Status.Text = "Off"
 				Settings[interName] = false
 			end
+			
+			saveSettings()
 		end	
 
 		newSetting.Change.MouseButton1Click:connect(function()
@@ -1977,6 +1994,8 @@ spawn(function()
 				obj.Status.Text = "Off"
 				SaveMapSettings[interName] = false
 			end
+
+			saveSettings()
 		end	
 
 		obj.Change.MouseButton1Click:connect(function()
@@ -2005,6 +2024,8 @@ spawn(function()
 					newSetting.Change.enabled.Visible = false
 					SaveMapSettings.CopyWhat[serv] = false
 				end
+
+				saveSettings()
 			end	
 
 			newSetting.Change.MouseButton1Click:connect(function()
@@ -2052,11 +2073,9 @@ spawn(function()
 			end
 		end
 
-		local consoleFunc = printconsole or writeconsole
-
-		if consoleFunc then
-			consoleFunc("Raspberry Pi's place copier loaded.")
-			consoleFunc("Copying map of game "..tostring(game.PlaceId)..".")
+		if Tell then
+			Tell("raspberry Pi's place copier loaded.")
+			Tell("copying map of game "..tostring(game.PlaceId)..".")
 		end
 
 		function archivable(root)
@@ -2078,17 +2097,17 @@ spawn(function()
 						v.Disabled = isDisabled
 
 						if v.Source == "" then 
-							if consoleFunc then consoleFunc("LocalScript "..v.Name.." had a problem decompiling.") end
+							if warnconsole then warnconsole("localscript "..v.Name.." had a problem decompiling.") end
 						else
-							if consoleFunc then consoleFunc("LocalScript "..v.Name.." decompiled.") end
+							if warnconsole then warnconsole("localscript "..v.Name.." decompiled.") end
 						end
 					elseif v:IsA("ModuleScript") then
 						v.Source = decompile(v)
 
 						if v.Source == "" then 
-							if consoleFunc then consoleFunc("ModuleScript "..v.Name.." had a problem decompiling.") end
+							if warnconsole then warnconsole("modulescript "..v.Name.." had a problem decompiling.") end
 						else
-							if consoleFunc then consoleFunc("ModuleScript "..v.Name.." decompiled.") end
+							if warnconsole then warnconsole("modulescript "..v.Name.." decompiled.") end
 						end
 					end
 				end)
@@ -2185,8 +2204,8 @@ spawn(function()
 			saveinstance(getelysianpath()..SaveMapName.Text..".rbxm",copyGroup)
 		end
 		--print("Saved!")
-		if consoleFunc then
-			consoleFunc("The map has been copied.")
+		if Tell then
+			Tell("The map has been copied.")
 		end
 		SaveMapButton.Text = "The map has been saved"
 		wait(5)
@@ -4844,7 +4863,7 @@ A GUI panel that displays the game hierarchy.
 
 							local parentObj = parentNode.Object
 							local function parent(a,b)
-								a.Parent = b
+								Set(a, {Name = 'Parent', ValueType = 'Instance', tags = {}}, b)
 							end
 							if Option.Selectable then
 								local list = Selection.List
@@ -5583,7 +5602,7 @@ A GUI panel that displays the game hierarchy.
 			Selection:Set({})
 		end)
 
-		-- PASTE
+		--[[ PASTE
 		makeButton(ACTION_PASTE,ACTION_PASTE_OVER,"Paste",true,function() return #Selection:Get() > 0 and #clipboard > 0 end).MouseButton1Click:connect(function()
 			if not Option.Modifiable then return end
 			local parent = Selection.List[1] or workspace
@@ -5602,24 +5621,16 @@ A GUI panel that displays the game hierarchy.
 			end
 			updateActions()
 		end)
-
+		]]
+		
 		-- CUT
 		makeButton(ACTION_CUT,ACTION_CUT_OVER,"Cut",true,function() return #Selection:Get() > 0 end).MouseButton1Click:connect(function()
 			if not Option.Modifiable then return end
-			clipboard = {}
-			local list = Selection.List
-			local cut = {}
+			local list = Selection:Get()
 			for i = 1,#list do
-				local obj = list[i]:Clone()
-				if obj then
-					table.insert(clipboard,obj)
-					table.insert(cut,list[i])
-				end
+				pcall(delete,list[i])
 			end
-			for i = 1,#cut do
-				pcall(delete,cut[i])
-			end
-			updateActions()
+			Selection:Set({})
 		end)
 
 		-- FREEZE
@@ -8530,5 +8541,5 @@ openScript(scr5)
 	scrollBarH:Update()
 end)
 
---moony
---asia
+-- moony
+-- asia

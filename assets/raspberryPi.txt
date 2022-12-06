@@ -1730,9 +1730,17 @@ local CreateGui = function()
 end
 
 local GetSelection, SetSelection
+
+local Connections = {}
 local D_E_X = CreateGui()
 
 D_E_X.Parent = Atlantis and Atlantis.Gui.Parent or game:GetService('CoreGui')
+D_E_X.AncestryChanged:Connect(function() 
+	if D_E_X:IsDescendantOf(game) then return end 
+	for _, Connection in pairs(Connections) do
+		pcall(function() Connection:Disconnect() end)
+	end 
+end)
 
 spawn(function()
 	local Gui = D_E_X
@@ -1879,29 +1887,29 @@ spawn(function()
 		end
 	end
 
-	OpenToggleButton.MouseButton1Up:connect(function()
+	table.insert(Connections, OpenToggleButton.MouseButton1Up:connect(function()
 		toggleDex(true)
-	end)
+	end))
 
-	OpenScriptEditorButton.MouseButton1Up:connect(function()
+	table.insert(Connections, OpenScriptEditorButton.MouseButton1Up:connect(function()
 		if OpenScriptEditorButton.Active then
 			ScriptEditor.Visible = true
 		end
-	end)
+	end))
 
-	CloseToggleButton.MouseButton1Up:connect(function()
+	table.insert(Connections, CloseToggleButton.MouseButton1Up:connect(function()
 		if CloseToggleButton.Active then
 			toggleDex(false)
 		end
-	end)
+	end))
 
 	for i,v in pairs(SlideFrame:GetChildren()) do
-		v.MouseButton1Click:connect(function()
+		table.insert(Connections, v.MouseButton1Click:connect(function()
 			switchWindows(v.Name)
-		end)
+		end))
 
-		v.MouseEnter:connect(function()v.BackgroundTransparency = 0.5 end)
-		v.MouseLeave:connect(function()if CurrentWindow~=v.Name then v.BackgroundTransparency = 1 end end)
+		table.insert(Connections, v.MouseEnter:connect(function()v.BackgroundTransparency = 0.5 end))
+		table.insert(Connections, v.MouseLeave:connect(function()if CurrentWindow~=v.Name then v.BackgroundTransparency = 1 end end))
 	end
 	
 	function createSetting(name,interName,defaultOn)
@@ -1925,9 +1933,9 @@ spawn(function()
 			saveSettings()
 		end	
 
-		newSetting.Change.MouseButton1Click:connect(function()
+		table.insert(Connections, newSetting.Change.MouseButton1Click:connect(function()
 			toggle(not Settings[interName])
-		end)
+		end))
 
 		newSetting.Visible = true
 		newSetting.Parent = SettingList
@@ -1942,6 +1950,27 @@ spawn(function()
 	createSetting("Clear property value on focus","ClearProps",false)
 	createSetting("Select ungrouped models","SelectUngrouped",true)
 	createSetting("SaveInstance decompiles scripts","SaveInstanceScripts",true)
+	
+	do
+		local newSetting = SettingTemplate:Clone()
+		newSetting.Position = UDim2.new(0,0,0,#SettingList:GetChildren() * 60)
+		newSetting.SName.Text = 'Enabled'
+
+		table.insert(Connections, newSetting.Change.MouseButton1Click:connect(function()
+			newSetting.Change.Bar:TweenPosition(UDim2.new(0,-2,0,-2),Enum.EasingDirection.Out,Enum.EasingStyle.Quart,0.25,true)
+			newSetting.Change.OnBar:TweenSize(UDim2.new(0,0,0,15),Enum.EasingDirection.Out,Enum.EasingStyle.Quart,0.25,true)
+			
+			wait(.25)
+			
+			D_E_X:Destroy()
+		end))
+
+		newSetting.Visible = true
+		newSetting.Parent = SettingList
+		
+		newSetting.Change.Bar:TweenPosition(UDim2.new(0,32,0,-2),Enum.EasingDirection.Out,Enum.EasingStyle.Quart,0.25,true)
+		newSetting.Change.OnBar:TweenSize(UDim2.new(0,34,0,15),Enum.EasingDirection.Out,Enum.EasingStyle.Quart,0.25,true)
+	end
 
 	local function getSelection()
 		if not GetSelection then return end
@@ -1954,7 +1983,7 @@ spawn(function()
 		end
 	end
 
-	Mouse.Button1Down:connect(function()
+	table.insert(Connections, Mouse.Button1Down:connect(function()
 		if not SetSelection then return end
 
 		if CurrentWindow == "Explorer" and Settings.ClickSelect then
@@ -1963,9 +1992,9 @@ spawn(function()
 				SetSelection:Invoke({target})
 			end
 		end
-	end)
+	end))
 
-	TotallyNotSelectionChanged.Event:connect(function()
+	table.insert(Connections, TotallyNotSelectionChanged.Event:connect(function()
 		if Settings.SelBox then
 			local success,err = pcall(function()
 				local selection = getSelection()
@@ -1975,7 +2004,7 @@ spawn(function()
 				SelectionBox.Adornee = nil
 			end
 		end
-	end)
+	end))
 
 	SettingsListener.OnInvoke = ReturnSetting
 
@@ -1998,9 +2027,9 @@ spawn(function()
 			saveSettings()
 		end	
 
-		obj.Change.MouseButton1Click:connect(function()
+		table.insert(Connections, obj.Change.MouseButton1Click:connect(function()
 			toggle(not SaveMapSettings[interName])
-		end)
+		end))
 
 		obj.Visible = true
 		obj.Parent = SaveMapSettingFrame
@@ -2028,9 +2057,9 @@ spawn(function()
 				saveSettings()
 			end	
 
-			newSetting.Change.MouseButton1Click:connect(function()
+			table.insert(Connections, newSetting.Change.MouseButton1Click:connect(function()
 				toggle(not SaveMapSettings.CopyWhat[serv])
-			end)
+			end))
 
 			newSetting.Visible = true
 			newSetting.Parent = SaveMapCopyList
@@ -2052,7 +2081,7 @@ spawn(function()
 
 	SaveMapName.Text = tostring(game.PlaceId).."MapCopy"
 
-	SaveMapButton.MouseButton1Click:connect(function()
+	table.insert(Connections, SaveMapButton.MouseButton1Click:connect(function()
 		local copyWhat = {}
 
 		local copyGroup = Instance.new("Model",ReplicatedStorage)
@@ -2210,7 +2239,7 @@ spawn(function()
 		SaveMapButton.Text = "The map has been saved"
 		wait(5)
 		SaveMapButton.Text = "Save"
-	end)
+	end))
 
 	-- End Copier
 
@@ -2712,7 +2741,7 @@ A GUI panel that displays the game hierarchy.
 			table.insert(activeOptions,newOption)
 			newOption.Position = UDim2.new(-0.4, dBut.Position.X.Offset, dBut.Position.Y.Scale, dBut.Position.Y.Offset + (#activeOptions * dBut.Size.Y.Offset))
 			newOption.Text = slots[i]
-			newOption.MouseButton1Down:connect(function()
+			table.insert(Connections, newOption.MouseButton1Down:connect(function()
 				dBut.Text = slots[i]
 				callback(slots[i])
 				for i,v in pairs(activeOptions) do
@@ -2720,16 +2749,20 @@ A GUI panel that displays the game hierarchy.
 				end
 				activeOptions = {}
 				barActive = false
-			end)
+			end))
 		end
 	end
 
 	-- Connects a function to an event such that it fires asynchronously
 	function Connect(event,func)
-		return event:connect(function(...)
+		local connection = event:connect(function(...)
 			local a = {...}
 			spawn(function() func(unpack(a)) end)
 		end)
+		
+		table.insert(Connections, connection)
+		
+		return connection
 	end
 
 	-- returns the ascendant ScreenGui of an object
@@ -2762,11 +2795,15 @@ A GUI panel that displays the game hierarchy.
 		end
 
 		function SetZIndexOnChanged(object)
-			return object.Changed:connect(function(p)
+			local ZIndexChanged = object.Changed:connect(function(p)
 				if p == "ZIndex" then
 					SetZIndex(object,object.ZIndex)
 				end
 			end)
+			
+			table.insert(Connections, ZIndexChanged)
+			
+			return ZIndexChanged
 		end
 	end
 
@@ -3137,7 +3174,7 @@ A GUI panel that displays the game hierarchy.
 			})
 
 			local scrollEventID = 0
-			ScrollDownFrame.MouseButton1Down:connect(function()
+			table.insert(Connections, ScrollDownFrame.MouseButton1Down:connect(function()
 				scrollEventID = tick()
 				local current = scrollEventID
 				local up_con
@@ -3147,6 +3184,7 @@ A GUI panel that displays the game hierarchy.
 					ResetButtonColor(ScrollDownFrame)
 					up_con:disconnect(); drag = nil
 				end)
+				table.insert(Connections, up_con)
 				MouseDrag.Parent = GetScreen(ScrollFrame)
 				Class:ScrollDown()
 				wait(0.2) -- delay before auto scroll
@@ -3155,13 +3193,13 @@ A GUI panel that displays the game hierarchy.
 					if not Class:CanScrollDown() then break end
 					wait()
 				end
-			end)
+			end))
 
-			ScrollDownFrame.MouseButton1Up:connect(function()
+			table.insert(Connections, ScrollDownFrame.MouseButton1Up:connect(function()
 				scrollEventID = tick()
-			end)
+			end))
 
-			ScrollUpFrame.MouseButton1Down:connect(function()
+			table.insert(Connections, ScrollUpFrame.MouseButton1Down:connect(function()
 				scrollEventID = tick()
 				local current = scrollEventID
 				local up_con
@@ -3171,6 +3209,7 @@ A GUI panel that displays the game hierarchy.
 					ResetButtonColor(ScrollUpFrame)
 					up_con:disconnect(); drag = nil
 				end)
+				table.insert(Connections, up_con)
 				MouseDrag.Parent = GetScreen(ScrollFrame)
 				Class:ScrollUp()
 				wait(0.2)
@@ -3179,14 +3218,14 @@ A GUI panel that displays the game hierarchy.
 					if not Class:CanScrollUp() then break end
 					wait()
 				end
-			end)
+			end))
 
-			ScrollUpFrame.MouseButton1Up:connect(function()
+			table.insert(Connections, ScrollUpFrame.MouseButton1Up:connect(function()
 				scrollEventID = tick()
-			end)
+			end))
 
 			if horizontal then
-				ScrollBarFrame.MouseButton1Down:connect(function(x,y)
+				table.insert(Connections, ScrollBarFrame.MouseButton1Down:connect(function(x,y)
 					scrollEventID = tick()
 					local current = scrollEventID
 					local up_con
@@ -3196,6 +3235,7 @@ A GUI panel that displays the game hierarchy.
 						ResetButtonColor(ScrollUpFrame)
 						up_con:disconnect(); drag = nil
 					end)
+					table.insert(Connections, up_con)
 					MouseDrag.Parent = GetScreen(ScrollFrame)
 					if x > ScrollThumbFrame.AbsolutePosition.x then
 						Class:ScrollTo(Class.ScrollIndex + Class.VisibleSpace)
@@ -3214,9 +3254,9 @@ A GUI panel that displays the game hierarchy.
 							wait()
 						end
 					end
-				end)
+				end))
 			else
-				ScrollBarFrame.MouseButton1Down:connect(function(x,y)
+				table.insert(Connections, ScrollBarFrame.MouseButton1Down:connect(function(x,y)
 					scrollEventID = tick()
 					local current = scrollEventID
 					local up_con
@@ -3226,6 +3266,7 @@ A GUI panel that displays the game hierarchy.
 						ResetButtonColor(ScrollUpFrame)
 						up_con:disconnect(); drag = nil
 					end)
+					table.insert(Connections, up_con)
 					MouseDrag.Parent = GetScreen(ScrollFrame)
 					if y > ScrollThumbFrame.AbsolutePosition.y then
 						Class:ScrollTo(Class.ScrollIndex + Class.VisibleSpace)
@@ -3244,11 +3285,11 @@ A GUI panel that displays the game hierarchy.
 							wait()
 						end
 					end
-				end)
+				end))
 			end
 
 			if horizontal then
-				ScrollThumbFrame.MouseButton1Down:connect(function(x,y)
+				table.insert(Connections, ScrollThumbFrame.MouseButton1Down:connect(function(x,y)
 					scrollEventID = tick()
 					local mouse_offset = x - ScrollThumbFrame.AbsolutePosition.x
 					local drag_con
@@ -3262,6 +3303,7 @@ A GUI panel that displays the game hierarchy.
 						x = x - bar_abs_pos
 						Class:SetScrollPercent(x/(bar_drag))
 					end)
+					table.insert(Connections, drag_con)
 					up_con = MouseDrag.MouseButton1Up:connect(function()
 						scrollEventID = tick()
 						MouseDrag.Parent = nil
@@ -3269,10 +3311,11 @@ A GUI panel that displays the game hierarchy.
 						drag_con:disconnect(); drag_con = nil
 						up_con:disconnect(); drag = nil
 					end)
+					table.insert(Connections, up_con)
 					MouseDrag.Parent = GetScreen(ScrollFrame)
-				end)
+				end))
 			else
-				ScrollThumbFrame.MouseButton1Down:connect(function(x,y)
+				table.insert(Connections, ScrollThumbFrame.MouseButton1Down:connect(function(x,y)
 					scrollEventID = tick()
 					local mouse_offset = y - ScrollThumbFrame.AbsolutePosition.y
 					local drag_con
@@ -3286,6 +3329,7 @@ A GUI panel that displays the game hierarchy.
 						y = y - bar_abs_pos
 						Class:SetScrollPercent(y/(bar_drag))
 					end)
+					table.insert(Connections, drag_con)
 					up_con = MouseDrag.MouseButton1Up:connect(function()
 						scrollEventID = tick()
 						MouseDrag.Parent = nil
@@ -3293,8 +3337,9 @@ A GUI panel that displays the game hierarchy.
 						drag_con:disconnect(); drag_con = nil
 						up_con:disconnect(); drag = nil
 					end)
+					table.insert(Connections, up_con)
 					MouseDrag.Parent = GetScreen(ScrollFrame)
-				end)
+				end))
 			end
 
 			function Class:Destroy()
@@ -3787,7 +3832,7 @@ A GUI panel that displays the game hierarchy.
 			button.FontSize = Enum.FontSize.Size11
 		end
 
-		button.MouseEnter:connect(function()
+		table.insert(Connections, button.MouseEnter:connect(function()
 			button.TextColor3 = DropDown.TextColorOver
 			button.BackgroundColor3 = DropDown.BackColorOver
 			if not insObj and CurrentInsertObjectWindow then
@@ -3805,16 +3850,16 @@ A GUI panel that displays the game hierarchy.
 					-- CreateFunctionCaller()
 				end
 			end
-		end)
-		button.MouseLeave:connect(function()
+		end))
+		table.insert(Connections, button.MouseLeave:connect(function()
 			button.TextColor3 = DropDown.TextColor
 			button.BackgroundColor3 = DropDown.BackColor
-		end)
-		button.MouseButton1Click:connect(function()
+		end))
+		table.insert(Connections, button.MouseButton1Click:connect(function()
 			button.TextColor3 = DropDown.TextColor
 			button.BackgroundColor3 = DropDown.BackColor
 			onClick(text)
-		end)	
+		end))	
 		return button
 	end
 
@@ -4218,9 +4263,10 @@ A GUI panel that displays the game hierarchy.
 		newCaution.MainWindow.Desc.Text = msg
 		newCaution.Parent = explorerPanel.Parent
 		newCaution.Visible = true
-		newCaution.MainWindow.Ok.MouseButton1Up:connect(function()
+		
+		table.insert(Connections, newCaution.MainWindow.Ok.MouseButton1Up:connect(function()
 			newCaution:Destroy()
-		end)
+		end))
 	end
 
 	function CreateTableCaution(title,msg)
@@ -4242,9 +4288,10 @@ A GUI panel that displays the game hierarchy.
 		end
 		newCaution.Parent = explorerPanel.Parent
 		newCaution.Visible = true
-		newCaution.MainWindow.Ok.MouseButton1Up:connect(function()
+		
+		table.insert(Connections, newCaution.MainWindow.Ok.MouseButton1Up:connect(function()
 			newCaution:Destroy()
-		end)
+		end))
 	end
 
 	local function Split(str, delimiter)
@@ -4409,13 +4456,14 @@ A GUI panel that displays the game hierarchy.
 		local newArgument = ArgumentTemplate:Clone()
 		newArgument.Parent = ArgumentList
 		newArgument.Visible = true
-		newArgument.Type.MouseButton1Down:connect(function()
+		
+		table.insert(Connections, newArgument.Type.MouseButton1Down:connect(function()
 			createDDown(newArgument.Type,function(choice)
 				newArgument.Type.Text = choice
 			end,"Script","Number","String","Color3","Vector3","Vector2","UDim2","NumberRange")
-		end)
+		end))
 
-		CurrentRemoteWindow.MainWindow.Ok.MouseButton1Up:connect(function()
+		table.insert(Connections, CurrentRemoteWindow.MainWindow.Ok.MouseButton1Up:connect(function()
 			if CurrentRemoteWindow and inst.Parent ~= nil then
 				local MyArguments = {}
 				for i,v in pairs(ArgumentList:GetChildren()) do
@@ -4442,40 +4490,41 @@ A GUI panel that displays the game hierarchy.
 				CurrentRemoteWindow:Destroy()
 				CurrentRemoteWindow = nil
 			end
-		end)
+		end))
 
-		CurrentRemoteWindow.MainWindow.Add.MouseButton1Up:connect(function()
+		table.insert(Connections, CurrentRemoteWindow.MainWindow.Add.MouseButton1Up:connect(function()
 			if CurrentRemoteWindow then
 				local newArgument = ArgumentTemplate:Clone()
 				newArgument.Position = UDim2.new(0,0,0,#ArgumentList:GetChildren() * 20)
 				newArgument.Parent = ArgumentList
 				ArgumentList.CanvasSize = UDim2.new(0,0,0,#ArgumentList:GetChildren() * 20)
 				newArgument.Visible = true
-				newArgument.Type.MouseButton1Down:connect(function()
+				
+				table.insert(Connections, newArgument.Type.MouseButton1Down:connect(function()
 					createDDown(newArgument.Type,function(choice)
 						newArgument.Type.Text = choice
 					end,"Script","Number","String","Color3","Vector3","Vector2","UDim2","NumberRange")
-				end)
+				end))
 			end
-		end)
+		end))
 
-		CurrentRemoteWindow.MainWindow.Subtract.MouseButton1Up:connect(function()
+		table.insert(Connections, CurrentRemoteWindow.MainWindow.Subtract.MouseButton1Up:connect(function()
 			if CurrentRemoteWindow then
 				if #ArgumentList:GetChildren() > 1 then
 					ArgumentList:GetChildren()[#ArgumentList:GetChildren()]:Destroy()
 					ArgumentList.CanvasSize = UDim2.new(0,0,0,#ArgumentList:GetChildren() * 20)
 				end
 			end
-		end)
+		end))
 
-		CurrentRemoteWindow.MainWindow.Cancel.MouseButton1Up:connect(function()
+		table.insert(Connections, CurrentRemoteWindow.MainWindow.Cancel.MouseButton1Up:connect(function()
 			if CurrentRemoteWindow then
 				CurrentRemoteWindow:Destroy()
 				CurrentRemoteWindow = nil
 			end
-		end)
+		end))
 
-		CurrentRemoteWindow.MainWindow.DisplayReturned.MouseButton1Up:connect(function()
+		table.insert(Connections, CurrentRemoteWindow.MainWindow.DisplayReturned.MouseButton1Up:connect(function()
 			if displayValues then
 				displayValues = false
 				CurrentRemoteWindow.MainWindow.DisplayReturned.enabled.Visible = false
@@ -4483,7 +4532,7 @@ A GUI panel that displays the game hierarchy.
 				displayValues = true
 				CurrentRemoteWindow.MainWindow.DisplayReturned.enabled.Visible = true
 			end
-		end)
+		end))
 	end
 
 	function PromptSaveInstance(inst)
@@ -4503,7 +4552,7 @@ A GUI panel that displays the game hierarchy.
 		local saveObjects = true
 		local overwriteCaution = false
 
-		CurrentSaveInstanceWindow.MainWindow.Save.MouseButton1Up:connect(function()
+		table.insert(Connections, CurrentSaveInstanceWindow.MainWindow.Save.MouseButton1Up:connect(function()
 			if readfile and getelysianpath then
 				if readfile(getelysianpath()..filename.Text..".rbxmx") then
 					if not overwriteCaution then
@@ -4513,7 +4562,7 @@ A GUI panel that displays the game hierarchy.
 						newCaution.MainWindow.Desc.Text = "The file, "..filename.Text..".rbxmx, already exists. Overwrite?"
 						newCaution.Parent = explorerPanel.Parent
 						newCaution.Visible = true
-						newCaution.MainWindow.Yes.MouseButton1Up:connect(function()
+						table.insert(Connections, newCaution.MainWindow.Yes.MouseButton1Up:connect(function()
 							ypcall(function()
 								SaveInstance(inst,filename.Text..".rbxmx",not saveObjects)
 							end)
@@ -4523,11 +4572,11 @@ A GUI panel that displays the game hierarchy.
 								CurrentSaveInstanceWindow:Destroy()
 								CurrentSaveInstanceWindow = nil
 							end
-						end)
-						newCaution.MainWindow.No.MouseButton1Up:connect(function()
+						end))
+						table.insert(Connections, newCaution.MainWindow.No.MouseButton1Up:connect(function()
 							overwriteCaution = false
 							newCaution:Destroy()
-						end)
+						end))
 					end
 				else
 					ypcall(function()
@@ -4557,8 +4606,8 @@ A GUI panel that displays the game hierarchy.
 					end
 				end
 			end
-		end)
-		CurrentSaveInstanceWindow.MainWindow.Cancel.MouseButton1Up:connect(function()
+		end))
+		table.insert(Connections, CurrentSaveInstanceWindow.MainWindow.Cancel.MouseButton1Up:connect(function()
 			if CurrentSaveInstanceWindow then
 				CurrentSaveInstanceWindow:Destroy()
 				CurrentSaveInstanceWindow = nil
@@ -4566,8 +4615,8 @@ A GUI panel that displays the game hierarchy.
 					explorerPanel.Parent.SaveInstanceOverwriteCaution:Destroy()
 				end
 			end
-		end)
-		CurrentSaveInstanceWindow.MainWindow.SaveObjects.MouseButton1Up:connect(function()
+		end))
+		table.insert(Connections, CurrentSaveInstanceWindow.MainWindow.SaveObjects.MouseButton1Up:connect(function()
 			if saveObjects then
 				saveObjects = false
 				CurrentSaveInstanceWindow.MainWindow.SaveObjects.enabled.Visible = false
@@ -4575,7 +4624,7 @@ A GUI panel that displays the game hierarchy.
 				saveObjects = true
 				CurrentSaveInstanceWindow.MainWindow.SaveObjects.enabled.Visible = true
 			end
-		end)
+		end))
 	end
 
 	function DestroyRightClick()
@@ -4749,7 +4798,7 @@ A GUI panel that displays the game hierarchy.
 				end
 				last = i
 			end)
-
+			table.insert(Connections, conDrag)
 			function cancelSelectDrag()
 				mouseDrag.Parent = nil
 				conDrag:disconnect()
@@ -4758,7 +4807,7 @@ A GUI panel that displays the game hierarchy.
 			end
 
 			conUp = mouseDrag[button]:connect(cancelSelectDrag)
-
+			table.insert(Connections, conUp)
 			mouseDrag.Parent = GetScreen(listFrame)
 		end
 
@@ -4837,7 +4886,7 @@ A GUI panel that displays the game hierarchy.
 					parentHighlight.Parent = listFrame
 				end
 			end)
-
+			table.insert(Connections, conUp)
 			function cancelReparentDrag()
 				mouseDrag.Parent = nil
 				conDrag:disconnect()
@@ -4882,10 +4931,11 @@ A GUI panel that displays the game hierarchy.
 					end
 				end
 			end)
+			table.insert(Connections, conUp)
 			conUp2 = mouseDrag.MouseButton2Down:connect(function()
 				cancelReparentDrag()
 			end)
-
+			table.insert(Connections, conUp2)
 			mouseDrag.Parent = GetScreen(listFrame)
 		end
 
@@ -4942,7 +4992,7 @@ A GUI panel that displays the game hierarchy.
 						listEntries[i] = entry
 
 						local expand = entry.IndentFrame.Expand
-						expand.MouseEnter:connect(function()
+						table.insert(Connections, expand.MouseEnter:connect(function()
 							local node = TreeList[i + self.ScrollIndex]
 							if #node > 0 then
 								if node.Expanded then
@@ -4951,8 +5001,8 @@ A GUI panel that displays the game hierarchy.
 									Icon(expand,NODE_COLLAPSED_OVER)
 								end
 							end
-						end)
-						expand.MouseLeave:connect(function()
+						end))
+						table.insert(Connections, expand.MouseLeave:connect(function()
 							local node = TreeList[i + self.ScrollIndex]
 							if #node > 0 then
 								if node.Expanded then
@@ -4961,20 +5011,21 @@ A GUI panel that displays the game hierarchy.
 									Icon(expand,NODE_COLLAPSED)
 								end
 							end
-						end)
-						expand.MouseButton1Down:connect(function()
+						end))
+						table.insert(Connections, expand.MouseButton1Down:connect(function()
 							local node = TreeList[i + self.ScrollIndex]
 							if #node > 0 then
 								node.Expanded = not node.Expanded
 								if node.Object == explorerPanel.Parent and node.Expanded then
-									CreateCaution("Warning","Please be careful when editing instances inside here, this is like the System32 of Dex and modifying objects here can break Dex.")
+									-- no one cares, nor asked
+									-- CreateCaution("Warning","Please be careful when editing instances inside here, this is like the System32 of Dex and modifying objects here can break Dex.")
 								end
 								-- use raw update so the list updates instantly
 								rawUpdateList()
 							end
-						end)
+						end))
 
-						entry.MouseButton1Down:connect(function(x,y)
+						table.insert(Connections, entry.MouseButton1Down:connect(function(x,y)
 							local node = TreeList[i + self.ScrollIndex]
 							DestroyRightClick()
 							if GetAwaitRemote:Invoke() then
@@ -5030,9 +5081,9 @@ A GUI panel that displays the game hierarchy.
 								end
 								dragSelect(i+self.ScrollIndex,true,'MouseButton1Up')
 							end
-						end)
+						end))
 
-						entry.MouseButton2Down:connect(function()
+						table.insert(Connections, entry.MouseButton2Down:connect(function()
 							if not Option.Selectable then return end
 
 							DestroyRightClick()
@@ -5049,10 +5100,10 @@ A GUI panel that displays the game hierarchy.
 							if not Selection.Selected[node.Object] then
 								Selection:Set({node.Object})
 							end
-						end)
+						end))
 
 
-						entry.MouseButton2Up:connect(function()
+						table.insert(Connections, entry.MouseButton2Up:connect(function()
 							if not Option.Selectable then return end
 
 							local node = TreeList[i + self.ScrollIndex]
@@ -5060,7 +5111,7 @@ A GUI panel that displays the game hierarchy.
 							if checkMouseInGui(curSelect) then
 								rightClickMenu(node.Object)
 							end
-						end)
+						end))
 
 						entry.Parent = listFrame
 					end
@@ -5099,6 +5150,7 @@ A GUI panel that displays the game hierarchy.
 							text.Text = object.Name
 						end
 					end)
+					table.insert(Connections, nameConnLookup[entry])
 
 					-- update selection
 					entry.IndentFrame.Transparency = node.Selected and 0 or 1
@@ -5137,20 +5189,20 @@ A GUI panel that displays the game hierarchy.
 		end)
 
 		local wheelAmount = 6
-		explorerPanel.MouseWheelForward:connect(function()
+		table.insert(Connections, explorerPanel.MouseWheelForward:connect(function()
 			if scrollBar.VisibleSpace - 1 > wheelAmount then
 				scrollBar:ScrollTo(scrollBar.ScrollIndex - wheelAmount)
 			else
 				scrollBar:ScrollTo(scrollBar.ScrollIndex - scrollBar.VisibleSpace)
 			end
-		end)
-		explorerPanel.MouseWheelBackward:connect(function()
+		end))
+		table.insert(Connections, explorerPanel.MouseWheelBackward:connect(function()
 			if scrollBar.VisibleSpace - 1 > wheelAmount then
 				scrollBar:ScrollTo(scrollBar.ScrollIndex + wheelAmount)
 			else
 				scrollBar:ScrollTo(scrollBar.ScrollIndex + scrollBar.VisibleSpace)
 			end
-		end)
+		end))
 	end
 
 	----------------------------------------------------------------
@@ -5555,18 +5607,18 @@ A GUI panel that displays the game hierarchy.
 			})
 
 
-			button.MouseEnter:connect(function()
+			table.insert(Connections, button.MouseEnter:connect(function()
 				if buttonEnabled then
 					button.BackgroundTransparency = 0.9
 				end
 				--Icon(button,over)
 				--tipText.Visible = true
-			end)
-			button.MouseLeave:connect(function()
+			end))
+			table.insert(Connections, button.MouseLeave:connect(function()
 				button.BackgroundTransparency = 1
 				--Icon(button,icon)
 				--tipText.Visible = false
-			end)
+			end))
 
 			currentActions = currentActions + 1
 			actionButtons[#actionButtons+1] = {Obj = button,Cond = cond}
@@ -5706,34 +5758,34 @@ A GUI panel that displays the game hierarchy.
 		return Selection
 	end
 
-	Input.InputBegan:connect(function(key)
+	table.insert(Connections, Input.InputBegan:connect(function(key)
 		if key.KeyCode == Enum.KeyCode.LeftControl then
 			HoldingCtrl = true
 		end
 		if key.KeyCode == Enum.KeyCode.LeftShift then
 			HoldingShift = true
 		end
-	end)
+	end))
 
-	Input.InputEnded:connect(function(key)
+	table.insert(Connections, Input.InputEnded:connect(function(key)
 		if key.KeyCode == Enum.KeyCode.LeftControl then
 			HoldingCtrl = false
 		end
 		if key.KeyCode == Enum.KeyCode.LeftShift then
 			HoldingShift = false
 		end
-	end)
+	end))
 
 	while RbxApi == nil do
 		RbxApi = GetApiRemote:Invoke()
 		wait()
 	end
 
-	explorerFilter.Changed:connect(function(prop)
+	table.insert(Connections, explorerFilter.Changed:connect(function(prop)
 		if prop == "Text" then
 			rawUpdateList()
 		end
-	end)
+	end))
 
 	CurrentInsertObjectWindow = CreateInsertObjectMenu(
 		GetClasses(),
@@ -6164,9 +6216,9 @@ Change log:
 			button.TextColor3 = Row.TextLockedColor
 		else
 			button.TextColor3 = Row.TextColor
-			button.MouseButton1Click:connect(function()
+			table.insert(Connections, button.MouseButton1Click:connect(function()
 				onClick()
-			end)
+			end))
 		end
 		return button
 	end
@@ -6222,17 +6274,17 @@ Change log:
 		button.Active = true
 		button.Text = text
 
-		button.MouseEnter:connect(function()
+		table.insert(Connections, button.MouseEnter:connect(function()
 			button.TextColor3 = DropDown.TextColorOver
 			button.BackgroundColor3 = DropDown.BackColorOver
-		end)
-		button.MouseLeave:connect(function()
+		end))
+		table.insert(Connections, button.MouseLeave:connect(function()
 			button.TextColor3 = DropDown.TextColor
 			button.BackgroundColor3 = DropDown.BackColor
-		end)
-		button.MouseButton1Click:connect(function()
+		end))
+		table.insert(Connections, button.MouseButton1Click:connect(function()
 			onClick(text)
-		end)	
+		end))
 		return button
 	end
 
@@ -6322,23 +6374,23 @@ Change log:
 
 		if not readOnly then
 
-			button.MouseEnter:connect(function()
+			table.insert(Connections, button.MouseEnter:connect(function()
 				button.TextColor3 = Row.TextColor
 				showArrow(DropDown.ArrowColorOver)
-			end)
-			button.MouseLeave:connect(function()
+			end))
+			table.insert(Connections, button.MouseLeave:connect(function()
 				button.TextColor3 = Row.TextColor
 				if not expanded then
 					showArrow(DropDown.ArrowColor)
 				end
-			end)
-			button.MouseButton1Click:connect(function()
+			end))
+			table.insert(Connections, button.MouseButton1Click:connect(function()
 				if expanded then
 					hideMenu()
 				else
 					showMenu()
 				end
-			end)
+			end))
 		end
 
 		return frame,button
@@ -6378,11 +6430,11 @@ Change log:
 		colorBox.Position = UDim2.new(0, Styles.Margin, 0, Styles.Margin)
 		colorBox.Size = UDim2.new(0, BrickColors.BoxSize, 0, BrickColors.BoxSize)
 		colorBox.Text = ""
-		colorBox.MouseButton1Click:connect(function()
+		table.insert(Connections, colorBox.MouseButton1Click:connect(function()
 			if not readOnly then
 				toggle()
 			end
-		end)
+		end))
 
 		if readOnly then
 			colorBox.AutoButtonColor = false
@@ -6416,10 +6468,10 @@ Change log:
 			brickColorBox.ZIndex = colorPalette.ZIndex
 			brickColorBox.Parent = colorPalette
 
-			brickColorBox.MouseButton1Click:connect(function()
+			table.insert(Connections, brickColorBox.MouseButton1Click:connect(function()
 				hide()
 				onClick(brickColor)
-			end)
+			end))
 		end
 
 		return frame,propertyLabel,colorBox
@@ -6473,11 +6525,11 @@ Change log:
 		end
 
 		if not readOnly then
-			checkboxFrame.MouseEnter:connect(function() mouseover = true updateSprite() end)
-			checkboxFrame.MouseLeave:connect(function() mouseover = false updateSprite() end)
-			checkboxFrame.MouseButton1Click:connect(function()
+			table.insert(Connections, checkboxFrame.MouseEnter:connect(function() mouseover = true updateSprite() end))
+			table.insert(Connections, checkboxFrame.MouseLeave:connect(function() mouseover = false updateSprite() end))
+			table.insert(Connections, checkboxFrame.MouseButton1Click:connect(function()
 				onClick(checked)
-			end)
+			end))
 		end
 
 		updateSprite()
@@ -6505,19 +6557,19 @@ Change log:
 		end
 
 		if not readOnly then
-			box.FocusLost:connect(function(enterPressed)
+			table.insert(Connections, box.FocusLost:connect(function(enterPressed)
 				Set(object, propertyData, ToValue(box.Text,propertyType))
 				update()
-			end)
+			end))
 		end
 
 		update()
 
-		object.Changed:connect(function(property)
+		table.insert(Connections, object.Changed:connect(function(property)
 			if (property == propertyName) then
 				update()
 			end
-		end)
+		end))
 
 		return box
 	end
@@ -6538,16 +6590,16 @@ Change log:
 			setValue(checked)
 		end
 
-		object.Changed:connect(function(property)
+		table.insert(Connections, object.Changed:connect(function(property)
 			if (property == propertyName) then
 				update()
 			end
-		end)
+		end))
 
 		if object:IsA("BoolValue") then
-			object.Changed:connect(function(val)
+			table.insert(Connections, object.Changed:connect(function(val)
 				update()
-			end)
+			end))
 		end
 
 		update()
@@ -6570,11 +6622,11 @@ Change log:
 
 		update()
 
-		object.Changed:connect(function(property)
+		table.insert(Connections, object.Changed:connect(function(property)
 			if (property == propertyName) then
 				update()
 			end
-		end)
+		end))
 
 		return frame
 	end
@@ -6584,12 +6636,12 @@ Change log:
 
 		local frame,textBox,colorBox = CreateColor3Control(readOnly)
 
-		textBox.FocusLost:connect(function(enterPressed)
+		table.insert(Connections, textBox.FocusLost:connect(function(enterPressed)
 			Set(object, propertyData, ToValue(textBox.Text,"Color3"))
 			local value = object[propertyName]
 			colorBox.BackgroundColor3 = value
 			textBox.Text = ToString(value, "Color3")
-		end)
+		end))
 
 		local function update()
 			local value = object[propertyName]
@@ -6599,11 +6651,11 @@ Change log:
 
 		update()
 
-		object.Changed:connect(function(property)
+		table.insert(Connections, object.Changed:connect(function(property)
 			if (property == propertyName) then
 				update()
 			end
-		end)
+		end))
 
 		return frame
 	end
@@ -6631,11 +6683,11 @@ Change log:
 
 		update()
 
-		object.Changed:connect(function(property)
+		table.insert(Connections, object.Changed:connect(function(property)
 			if (property == propertyName) then
 				update()
 			end
-		end)
+		end))
 
 		return dropdown
 	end
@@ -6660,7 +6712,7 @@ Change log:
 		end
 
 		if not readOnly then
-			box.MouseButton1Click:connect(function()
+			table.insert(Connections, box.MouseButton1Click:connect(function()
 				if AwaitingObjectValue then
 					AwaitingObjectValue = false
 					update()
@@ -6670,26 +6722,26 @@ Change log:
 				AwaitingObjectObj = object
 				AwaitingObjectProp = propertyData
 				box.Text = "Select an Object"
-			end)
+			end))
 
 			box.Cancel.Visible = true
-			box.Cancel.MouseButton1Click:connect(function()
+			table.insert(Connections, box.Cancel.MouseButton1Click:connect(function()
 				object[propertyName] = nil
-			end)
+			end))
 		end
 
 		update()
 
-		object.Changed:connect(function(property)
+		table.insert(Connections, object.Changed:connect(function(property)
 			if (property == propertyName) then
 				update()
 			end
-		end)
+		end))
 
 		if object:IsA("ObjectValue") then
-			object.Changed:connect(function(val)
+			table.insert(Connections, object.Changed:connect(function(val)
 				update()
-			end)
+			end))
 		end
 
 		return box
@@ -6792,14 +6844,14 @@ Change log:
 		local control = GetControl(object, propertyData, readOnly)
 		control.Parent = propertyValueFrame
 
-		rowFrame.MouseEnter:connect(function()
+		table.insert(Connections, rowFrame.MouseEnter:connect(function()
 			propertyLabelFrame.BackgroundColor3 = Row.BackgroundColorMouseover
 			propertyValueFrame.BackgroundColor3 = Row.BackgroundColorMouseover
-		end)
-		rowFrame.MouseLeave:connect(function()
+		end))
+		table.insert(Connections, rowFrame.MouseLeave:connect(function()
 			propertyLabelFrame.BackgroundColor3 = backColor
 			propertyValueFrame.BackgroundColor3 = backColor
-		end)
+		end))
 
 		propertyLabelFrame.BackgroundColor3 = backColor
 		propertyValueFrame.BackgroundColor3 = backColor
@@ -6911,11 +6963,15 @@ Change log:
 		end
 	end
 	function SetZIndexOnChanged(object)
-		return object.Changed:connect(function(p)
+		local zindexchanged = object.Changed:connect(function(p)
 			if p == "ZIndex" then
 				SetZIndex(object,object.ZIndex)
 			end
 		end)
+		
+		table.insert(Connections, zindexchanged)
+		
+		return zindexchanged
 	end
 	function Create(ty,data)
 		local obj
@@ -7254,7 +7310,7 @@ Change log:
 			SetZIndexOnChanged(ScrollFrame)
 
 			local scrollEventID = 0
-			ScrollDownFrame.MouseButton1Down:connect(function()
+			table.insert(Connections, ScrollDownFrame.MouseButton1Down:connect(function()
 				scrollEventID = tick()
 				local current = scrollEventID
 				local up_con
@@ -7264,6 +7320,7 @@ Change log:
 					ResetButtonColor(ScrollDownFrame)
 					up_con:disconnect(); drag = nil
 				end)
+				table.insert(Connections, up_con)
 				MouseDrag.Parent = GetScreen(ScrollFrame)
 				Class:ScrollDown()
 				wait(0.2) -- delay before auto scroll
@@ -7272,13 +7329,13 @@ Change log:
 					if not Class:CanScrollDown() then break end
 					wait()
 				end
-			end)
+			end))
 
-			ScrollDownFrame.MouseButton1Up:connect(function()
+			table.insert(Connections, ScrollDownFrame.MouseButton1Up:connect(function()
 				scrollEventID = tick()
-			end)
+			end))
 
-			ScrollUpFrame.MouseButton1Down:connect(function()
+			table.insert(Connections, ScrollUpFrame.MouseButton1Down:connect(function()
 				scrollEventID = tick()
 				local current = scrollEventID
 				local up_con
@@ -7288,6 +7345,7 @@ Change log:
 					ResetButtonColor(ScrollUpFrame)
 					up_con:disconnect(); drag = nil
 				end)
+				table.insert(Connections, up_con)
 				MouseDrag.Parent = GetScreen(ScrollFrame)
 				Class:ScrollUp()
 				wait(0.2)
@@ -7296,14 +7354,14 @@ Change log:
 					if not Class:CanScrollUp() then break end
 					wait()
 				end
-			end)
+			end))
 
-			ScrollUpFrame.MouseButton1Up:connect(function()
+			table.insert(Connections, ScrollUpFrame.MouseButton1Up:connect(function()
 				scrollEventID = tick()
-			end)
+			end))
 
 			if horizontal then
-				ScrollBarFrame.MouseButton1Down:connect(function(x,y)
+				table.insert(Connections, ScrollBarFrame.MouseButton1Down:connect(function(x,y)
 					scrollEventID = tick()
 					local current = scrollEventID
 					local up_con
@@ -7313,6 +7371,7 @@ Change log:
 						ResetButtonColor(ScrollUpFrame)
 						up_con:disconnect(); drag = nil
 					end)
+					table.insert(Connections, up_con)
 					MouseDrag.Parent = GetScreen(ScrollFrame)
 					if x > ScrollThumbFrame.AbsolutePosition.x then
 						Class:ScrollTo(Class.ScrollIndex + Class.VisibleSpace)
@@ -7331,9 +7390,9 @@ Change log:
 							wait()
 						end
 					end
-				end)
+				end))
 			else
-				ScrollBarFrame.MouseButton1Down:connect(function(x,y)
+				table.insert(Connections, ScrollBarFrame.MouseButton1Down:connect(function(x,y)
 					scrollEventID = tick()
 					local current = scrollEventID
 					local up_con
@@ -7343,6 +7402,7 @@ Change log:
 						ResetButtonColor(ScrollUpFrame)
 						up_con:disconnect(); drag = nil
 					end)
+					table.insert(Connections, up_con)
 					MouseDrag.Parent = GetScreen(ScrollFrame)
 					if y > ScrollThumbFrame.AbsolutePosition.y then
 						Class:ScrollTo(Class.ScrollIndex + Class.VisibleSpace)
@@ -7361,11 +7421,11 @@ Change log:
 							wait()
 						end
 					end
-				end)
+				end))
 			end
 
 			if horizontal then
-				ScrollThumbFrame.MouseButton1Down:connect(function(x,y)
+				table.insert(Connections, ScrollThumbFrame.MouseButton1Down:connect(function(x,y)
 					scrollEventID = tick()
 					local mouse_offset = x - ScrollThumbFrame.AbsolutePosition.x
 					local drag_con
@@ -7379,6 +7439,7 @@ Change log:
 						x = x - bar_abs_pos
 						Class:SetScrollPercent(x/(bar_drag))
 					end)
+					table.insert(Connections, drag_con)
 					up_con = MouseDrag.MouseButton1Up:connect(function()
 						scrollEventID = tick()
 						MouseDrag.Parent = nil
@@ -7386,10 +7447,11 @@ Change log:
 						drag_con:disconnect(); drag_con = nil
 						up_con:disconnect(); drag = nil
 					end)
+					table.insert(Connections, up_con)
 					MouseDrag.Parent = GetScreen(ScrollFrame)
-				end)
+				end))
 			else
-				ScrollThumbFrame.MouseButton1Down:connect(function(x,y)
+				table.insert(Connections, ScrollThumbFrame.MouseButton1Down:connect(function(x,y)
 					scrollEventID = tick()
 					local mouse_offset = y - ScrollThumbFrame.AbsolutePosition.y
 					local drag_con
@@ -7403,6 +7465,7 @@ Change log:
 						y = y - bar_abs_pos
 						Class:SetScrollPercent(y/(bar_drag))
 					end)
+					table.insert(Connections, drag_con)
 					up_con = MouseDrag.MouseButton1Up:connect(function()
 						scrollEventID = tick()
 						MouseDrag.Parent = nil
@@ -7410,8 +7473,9 @@ Change log:
 						drag_con:disconnect(); drag_con = nil
 						up_con:disconnect(); drag = nil
 					end)
+					table.insert(Connections, up_con)
 					MouseDrag.Parent = GetScreen(ScrollFrame)
-				end)
+				end))
 			end
 
 			function Class:Destroy()
@@ -7479,30 +7543,30 @@ Change log:
 
 		end
 
-		MainFrame.Changed:connect(function(p)
+		table.insert(Connections, MainFrame.Changed:connect(function(p)
 			if p == 'AbsoluteSize' then
 				scrollBarH.VisibleSpace = math.ceil(MainFrame.AbsoluteSize.x)
 				scrollBarH:Update()
 				scrollBar.VisibleSpace = math.ceil(MainFrame.AbsoluteSize.y)
 				scrollBar:Update()
 			end
-		end)
+		end))
 
 		local wheelAmount = Row.Height
-		PropertiesFrame.MouseWheelForward:connect(function()
+		table.insert(Connections, PropertiesFrame.MouseWheelForward:connect(function()
 			if scrollBar.VisibleSpace - 1 > wheelAmount then
 				scrollBar:ScrollTo(scrollBar.ScrollIndex - wheelAmount)
 			else
 				scrollBar:ScrollTo(scrollBar.ScrollIndex - scrollBar.VisibleSpace)
 			end
-		end)
-		PropertiesFrame.MouseWheelBackward:connect(function()
+		end))
+		table.insert(Connections, PropertiesFrame.MouseWheelBackward:connect(function()
 			if scrollBar.VisibleSpace - 1 > wheelAmount then
 				scrollBar:ScrollTo(scrollBar.ScrollIndex + wheelAmount)
 			else
 				scrollBar:ScrollTo(scrollBar.ScrollIndex + scrollBar.VisibleSpace)
 			end
-		end)
+		end))
 	end
 
 	scrollBar.VisibleSpace = math.ceil(MainFrame.AbsoluteSize.y)
@@ -7510,11 +7574,11 @@ Change log:
 
 	showProperties(GetSelection())
 
-	bindSelectionChanged.Event:connect(function()
+	table.insert(Connections, bindSelectionChanged.Event:connect(function()
 		showProperties(GetSelection())
-	end)
+	end))
 
-	bindSetAwait.Event:connect(function(obj)
+	table.insert(Connections, bindSetAwait.Event:connect(function(obj)
 		if AwaitingObjectValue then
 			AwaitingObjectValue = false
 			local mySel = obj
@@ -7524,13 +7588,13 @@ Change log:
 				end)
 			end
 		end
-	end)
+	end))
 
-	propertiesSearch.Changed:connect(function(prop)
+	table.insert(Connections, propertiesSearch.Changed:connect(function(prop)
 		if prop == "Text" then
 			showProperties(GetSelection())
 		end
-	end)
+	end))
 
 	bindGetApi.OnInvoke = function()
 		return RbxApi
@@ -7607,11 +7671,15 @@ spawn(function()
 		end
 	end
 	function SetZIndexOnChanged(object)
-		return object.Changed:connect(function(p)
+		local zindexchanged = object.Changed:connect(function(p)
 			if p == "ZIndex" then
 				SetZIndex(object,object.ZIndex)
 			end
 		end)
+		
+		table.insert(Connections, zindexchanged)
+		
+		return zindexchanged
 	end
 	function Create(ty,data)
 		local obj
@@ -7950,7 +8018,7 @@ spawn(function()
 			SetZIndexOnChanged(ScrollFrame)
 
 			local scrollEventID = 0
-			ScrollDownFrame.MouseButton1Down:connect(function()
+			table.insert(Connections, ScrollDownFrame.MouseButton1Down:connect(function()
 				scrollEventID = tick()
 				local current = scrollEventID
 				local up_con
@@ -7960,6 +8028,7 @@ spawn(function()
 					ResetButtonColor(ScrollDownFrame)
 					up_con:disconnect(); drag = nil
 				end)
+				table.insert(Connections, up_con)
 				MouseDrag.Parent = GetScreen(ScrollFrame)
 				Class:ScrollDown()
 				wait(0.2) -- delay before auto scroll
@@ -7968,13 +8037,13 @@ spawn(function()
 					if not Class:CanScrollDown() then break end
 					wait()
 				end
-			end)
+			end))
 
-			ScrollDownFrame.MouseButton1Up:connect(function()
+			table.insert(Connections, ScrollDownFrame.MouseButton1Up:connect(function()
 				scrollEventID = tick()
-			end)
+			end))
 
-			ScrollUpFrame.MouseButton1Down:connect(function()
+			table.insert(Connections, ScrollUpFrame.MouseButton1Down:connect(function()
 				scrollEventID = tick()
 				local current = scrollEventID
 				local up_con
@@ -7984,6 +8053,7 @@ spawn(function()
 					ResetButtonColor(ScrollUpFrame)
 					up_con:disconnect(); drag = nil
 				end)
+				table.insert(Connections, up_con)
 				MouseDrag.Parent = GetScreen(ScrollFrame)
 				Class:ScrollUp()
 				wait(0.2)
@@ -7992,14 +8062,14 @@ spawn(function()
 					if not Class:CanScrollUp() then break end
 					wait()
 				end
-			end)
+			end))
 
-			ScrollUpFrame.MouseButton1Up:connect(function()
+			table.insert(Connections, ScrollUpFrame.MouseButton1Up:connect(function()
 				scrollEventID = tick()
-			end)
+			end))
 
 			if horizontal then
-				ScrollBarFrame.MouseButton1Down:connect(function(x,y)
+				table.insert(Connections, ScrollBarFrame.MouseButton1Down:connect(function(x,y)
 					scrollEventID = tick()
 					local current = scrollEventID
 					local up_con
@@ -8009,6 +8079,7 @@ spawn(function()
 						ResetButtonColor(ScrollUpFrame)
 						up_con:disconnect(); drag = nil
 					end)
+					table.insert(Connections, up_con)
 					MouseDrag.Parent = GetScreen(ScrollFrame)
 					if x > ScrollThumbFrame.AbsolutePosition.x then
 						Class:ScrollTo(Class.ScrollIndex + Class.VisibleSpace)
@@ -8027,9 +8098,9 @@ spawn(function()
 							wait()
 						end
 					end
-				end)
+				end))
 			else
-				ScrollBarFrame.MouseButton1Down:connect(function(x,y)
+				table.insert(Connections, ScrollBarFrame.MouseButton1Down:connect(function(x,y)
 					scrollEventID = tick()
 					local current = scrollEventID
 					local up_con
@@ -8039,6 +8110,7 @@ spawn(function()
 						ResetButtonColor(ScrollUpFrame)
 						up_con:disconnect(); drag = nil
 					end)
+					table.insert(Connections, up_con)
 					MouseDrag.Parent = GetScreen(ScrollFrame)
 					if y > ScrollThumbFrame.AbsolutePosition.y then
 						Class:ScrollTo(Class.ScrollIndex + Class.VisibleSpace)
@@ -8057,11 +8129,11 @@ spawn(function()
 							wait()
 						end
 					end
-				end)
+				end))
 			end
 
 			if horizontal then
-				ScrollThumbFrame.MouseButton1Down:connect(function(x,y)
+				table.insert(Connections, ScrollThumbFrame.MouseButton1Down:connect(function(x,y)
 					scrollEventID = tick()
 					local mouse_offset = x - ScrollThumbFrame.AbsolutePosition.x
 					local drag_con
@@ -8075,6 +8147,7 @@ spawn(function()
 						x = x - bar_abs_pos
 						Class:SetScrollPercent(x/(bar_drag))
 					end)
+					table.insert(Connections, drag_con)
 					up_con = MouseDrag.MouseButton1Up:connect(function()
 						scrollEventID = tick()
 						MouseDrag.Parent = nil
@@ -8082,10 +8155,11 @@ spawn(function()
 						drag_con:disconnect(); drag_con = nil
 						up_con:disconnect(); drag = nil
 					end)
+					table.insert(Connections, up_con)
 					MouseDrag.Parent = GetScreen(ScrollFrame)
-				end)
+				end))
 			else
-				ScrollThumbFrame.MouseButton1Down:connect(function(x,y)
+				table.insert(Connections, ScrollThumbFrame.MouseButton1Down:connect(function(x,y)
 					scrollEventID = tick()
 					local mouse_offset = y - ScrollThumbFrame.AbsolutePosition.y
 					local drag_con
@@ -8099,6 +8173,7 @@ spawn(function()
 						y = y - bar_abs_pos
 						Class:SetScrollPercent(y/(bar_drag))
 					end)
+					table.insert(Connections, drag_con)
 					up_con = MouseDrag.MouseButton1Up:connect(function()
 						scrollEventID = tick()
 						MouseDrag.Parent = nil
@@ -8106,8 +8181,9 @@ spawn(function()
 						drag_con:disconnect(); drag_con = nil
 						up_con:disconnect(); drag = nil
 					end)
+					table.insert(Connections, up_con)
 					MouseDrag.Parent = GetScreen(ScrollFrame)
-				end)
+				end))
 			end
 
 			function Class:Destroy()
@@ -8394,7 +8470,7 @@ spawn(function()
 		newTab.Position = UDim2.new(0,#scriptBar:GetChildren() * 100,0,0)
 		newTab.Visible = true
 
-		newTab.Button.MouseButton1Down:connect(function()
+		table.insert(Connections, newTab.Button.MouseButton1Down:connect(function()
 			for i,v in pairs(scriptBar:GetChildren()) do
 				if v == newTab then
 					editingIndex = i
@@ -8405,9 +8481,9 @@ spawn(function()
 					scrollBarH:Update()
 				end
 			end
-		end)
+		end))
 
-		newTab.Close.MouseButton1Click:connect(function()
+		table.insert(Connections, newTab.Close.MouseButton1Click:connect(function()
 			for i,v in pairs(scriptBar:GetChildren()) do
 				if v == newTab then
 					table.remove(memoryScripts,i)
@@ -8434,7 +8510,7 @@ spawn(function()
 					newTab:Destroy()
 				end
 			end
-		end)
+		end))
 
 		editingIndex = #memoryScripts
 		buildScript(scrSource,0,0,true)
@@ -8475,50 +8551,50 @@ spawn(function()
 		end
 	end
 
-	scriptBar.ChildAdded:connect(updateScriptBar)
-	scriptBar.ChildRemoved:connect(updateScriptBar)
+	table.insert(Connections, scriptBar.ChildAdded:connect(updateScriptBar))
+	table.insert(Connections, scriptBar.ChildRemoved:connect(updateScriptBar))
 
-	scriptBarLeft.MouseButton1Click:connect(function()
+	table.insert(Connections, scriptBarLeft.MouseButton1Click:connect(function()
 		if scriptBarLeft.Active == false then return end
 		for i,v in pairs(scriptBar:GetChildren()) do
 			v.Position = v.Position + UDim2.new(0,100,0,0)
 		end
 		updateScriptBar()
-	end)
+	end))
 
-	scriptBarRight.MouseButton1Click:connect(function()
+	table.insert(Connections, scriptBarRight.MouseButton1Click:connect(function()
 		if scriptBarRight.Active == false then return end
 		for i,v in pairs(scriptBar:GetChildren()) do
 			v.Position = v.Position + UDim2.new(0,-100,0,0)
 		end
 		updateScriptBar()
-	end)
+	end))
 
-	mouse.Button1Down:connect(function()
+	table.insert(Connections, mouse.Button1Down:connect(function()
 		if checkMouseInGui(editorGrid) then
 			--print("LETS EDIT!")
 		end
-	end)
+	end))
 
-	openEvent.Event:connect(function(...)
+	table.insert(Connections, openEvent.Event:connect(function(...)
 		top.Visible = true
 		local args = {...}
 		if #args > 0 then
 			openScript(args[1])
 		end
-	end)
+	end))
 
-	clipboardButton.MouseButton1Click:connect(function()
+	table.insert(Connections, clipboardButton.MouseButton1Click:connect(function()
 		if Clipboard and Clipboard.set then
 			Clipboard.set(currentSource)
 		elseif CopyString then
 			CopyString(currentSource)
 		end
-	end)
+	end))
 
-	closeButton.MouseButton1Click:connect(function()
+	table.insert(Connections, closeButton.MouseButton1Click:connect(function()
 		top.Visible = false
-	end)
+	end))
 
 --[[
 local scr = script.Parent:WaitForChild("Scr")

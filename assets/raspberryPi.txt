@@ -1856,16 +1856,17 @@ spawn(function()
 			switchWindows("Nothing c:")
 		end
 	end
-
+	
+	local Settings
 	function saveSettings()
-		writefile(getelysianpath() .. 'settings.json' ,game:GetService("HttpService"):JSONEncode(Settings))
+		writefile(getelysianpath() .. 'settings.json', game:GetService("HttpService"):JSONEncode(Settings))
 	end
 
 	function getSettings()
 		return game:GetService('HttpService'):JSONDecode(readfile(getelysianpath() .. 'settings.json'))
 	end
 
-	local Settings = {
+	Settings = {
 		ClickSelect = false,
 		SelBox = false,
 		ClearProps = false,
@@ -1960,9 +1961,15 @@ spawn(function()
 			newSetting.Change.Bar:TweenPosition(UDim2.new(0,-2,0,-2),Enum.EasingDirection.Out,Enum.EasingStyle.Quart,0.25,true)
 			newSetting.Change.OnBar:TweenSize(UDim2.new(0,0,0,15),Enum.EasingDirection.Out,Enum.EasingStyle.Quart,0.25,true)
 			
+			newSetting.Status.Text = "Off"
+			
 			wait(.25)
 			
-			D_E_X:Destroy()
+			Gui.Enabled = false
+			Gui.Name = 'disabledDex'
+			Gui.Parent = nil
+			
+			Gui:Destroy()
 		end))
 
 		newSetting.Visible = true
@@ -1970,6 +1977,8 @@ spawn(function()
 		
 		newSetting.Change.Bar:TweenPosition(UDim2.new(0,32,0,-2),Enum.EasingDirection.Out,Enum.EasingStyle.Quart,0.25,true)
 		newSetting.Change.OnBar:TweenSize(UDim2.new(0,34,0,15),Enum.EasingDirection.Out,Enum.EasingStyle.Quart,0.25,true)
+		
+		newSetting.Status.Text = "On"
 	end
 
 	local function getSelection()
@@ -2850,8 +2859,12 @@ A GUI panel that displays the game hierarchy.
 					});
 				})
 			end
-
-			IconFrame.IconMap.Position = UDim2.new(-col - (pad*(col+1) + border)/iconSize,0,-row - (pad*(row+1) + border)/iconSize,0)
+			
+			local IconMap = IconFrame and IconFrame:FindFirstChild('IconMap')
+			if IconMap then
+				IconMap.Position = UDim2.new(-col - (pad*(col+1) + border)/iconSize,0,-row - (pad*(row+1) + border)/iconSize,0)
+			end
+			
 			return IconFrame
 		end
 	end

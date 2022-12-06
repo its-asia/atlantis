@@ -1,5 +1,5 @@
--- raspberry pi dex
--- slightly modified by its-asia on github
+-- stolen from some skidded script on v3rm
+-- slightly modified
 
 local Players = game:GetService('Players')
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
@@ -10,15 +10,13 @@ local getelysianpath = getelysianpath or function() -- does anyone use elysian a
 	return 'dex/'
 end
 
-local get_nil_instances = get_nil_instances or getnilinstances
-
 local Tell = Notify and function(Text)
 	Notify(nil, 'dex', Text)
 end or printconsole and function(Text)
 	printconsole(Text, 255, 255, 255)
 end or warn
 
-local RbxApi = _G.RbxApi -- :trolleybus:
+local RbxApi = _G.RbxApi
 if not RbxApi then
 	Tell('rbxapi is not loaded?')
 
@@ -1297,7 +1295,7 @@ local CreateGui = function()
 	NewGuiPart108.ZIndex = 2
 	NewGuiPart108.Font = Enum.Font.SourceSansBold
 	NewGuiPart108.FontSize = Enum.FontSize.Size28
-	NewGuiPart108.Text = "V2.0.1"
+	NewGuiPart108.Text = "V2.0.0"
 	NewGuiPart108.TextWrapped = true
 
 	NewGuiPart109.Name = "Creator"
@@ -1309,7 +1307,7 @@ local CreateGui = function()
 	NewGuiPart109.ZIndex = 2
 	NewGuiPart109.Font = Enum.Font.SourceSansBold
 	NewGuiPart109.FontSize = Enum.FontSize.Size28
-	NewGuiPart109.Text = "Raspberry Pi, Script Made By Advancedev, edited by its-asia on github"
+	NewGuiPart109.Text = "Raspberry Pi , Script Made By Advancedev"
 	NewGuiPart109.TextWrapped = true
 
 	NewGuiPart110.Name = "Slant"
@@ -1753,7 +1751,8 @@ spawn(function()
 	local ExplorerButton = SlideFrame:WaitForChild("Explorer")
 	local SettingsButton = SlideFrame:WaitForChild("Settings")
 
-	local SelectionBox = Instance.new("SelectionBox")
+	local SelectionBox = CreateSelectionBox and CreateSelectionBox() or Instance.new("SelectionBox") -- do i have too many functions? yes. yes i do.
+	
 	SelectionBox.Parent = Gui
 
 	local ExplorerPanel = Gui:WaitForChild("ExplorerPanel")
@@ -2053,9 +2052,11 @@ spawn(function()
 			end
 		end
 
-		if Tell then
-			Tell("Raspberry Pi's place copier loaded.")
-			Tell("Copying map of game "..tostring(game.PlaceId)..".")
+		local consoleFunc = printconsole or writeconsole
+
+		if consoleFunc then
+			consoleFunc("Raspberry Pi's place copier loaded.")
+			consoleFunc("Copying map of game "..tostring(game.PlaceId)..".")
 		end
 
 		function archivable(root)
@@ -2077,17 +2078,17 @@ spawn(function()
 						v.Disabled = isDisabled
 
 						if v.Source == "" then 
-							if Tell then Tell("LocalScript "..v.Name.." had a problem decompiling.") end
+							if consoleFunc then consoleFunc("LocalScript "..v.Name.." had a problem decompiling.") end
 						else
-							if Tell then Tell("LocalScript "..v.Name.." decompiled.") end
+							if consoleFunc then consoleFunc("LocalScript "..v.Name.." decompiled.") end
 						end
 					elseif v:IsA("ModuleScript") then
 						v.Source = decompile(v)
 
 						if v.Source == "" then 
-							if Tell then Tell("ModuleScript "..v.Name.." had a problem decompiling.") end
+							if consoleFunc then consoleFunc("ModuleScript "..v.Name.." had a problem decompiling.") end
 						else
-							if Tell then Tell("ModuleScript "..v.Name.." decompiled.") end
+							if consoleFunc then consoleFunc("ModuleScript "..v.Name.." decompiled.") end
 						end
 					end
 				end)
@@ -2184,8 +2185,8 @@ spawn(function()
 			saveinstance(getelysianpath()..SaveMapName.Text..".rbxm",copyGroup)
 		end
 		--print("Saved!")
-		if Tell then
-			Tell("The map has been copied.")
+		if consoleFunc then
+			consoleFunc("The map has been copied.")
 		end
 		SaveMapButton.Text = "The map has been saved"
 		wait(5)
@@ -4843,7 +4844,7 @@ A GUI panel that displays the game hierarchy.
 
 							local parentObj = parentNode.Object
 							local function parent(a,b)
-								Set(a, {Name = 'Parent', ValueType = 'Instance', tags = {}}, b)
+								a.Parent = b
 							end
 							if Option.Selectable then
 								local list = Selection.List
@@ -5583,7 +5584,6 @@ A GUI panel that displays the game hierarchy.
 		end)
 
 		-- PASTE
-		--[[
 		makeButton(ACTION_PASTE,ACTION_PASTE_OVER,"Paste",true,function() return #Selection:Get() > 0 and #clipboard > 0 end).MouseButton1Click:connect(function()
 			if not Option.Modifiable then return end
 			local parent = Selection.List[1] or workspace
@@ -5591,10 +5591,8 @@ A GUI panel that displays the game hierarchy.
 				clipboard[i]:Clone().Parent = parent
 			end
 		end)
-]]
-		
+
 		-- COPY
-		--[[
 		makeButton(ACTION_COPY,ACTION_COPY_OVER,"Copy",true,function() return #Selection:Get() > 0 end).MouseButton1Click:connect(function()
 			if not Option.Modifiable then return end
 			clipboard = {}
@@ -5604,16 +5602,24 @@ A GUI panel that displays the game hierarchy.
 			end
 			updateActions()
 		end)
-]]
-		
+
 		-- CUT
 		makeButton(ACTION_CUT,ACTION_CUT_OVER,"Cut",true,function() return #Selection:Get() > 0 end).MouseButton1Click:connect(function()
 			if not Option.Modifiable then return end
-			local list = Selection:Get()
+			clipboard = {}
+			local list = Selection.List
+			local cut = {}
 			for i = 1,#list do
-				pcall(delete,list[i])
+				local obj = list[i]:Clone()
+				if obj then
+					table.insert(clipboard,obj)
+					table.insert(cut,list[i])
+				end
 			end
-			Selection:Set({})
+			for i = 1,#cut do
+				pcall(delete,cut[i])
+			end
+			updateActions()
 		end)
 
 		-- FREEZE
@@ -8524,5 +8530,5 @@ openScript(scr5)
 	scrollBarH:Update()
 end)
 
--- moony
--- asia
+--moony
+--asia

@@ -1,5 +1,5 @@
--- stolen from some skidded script on v3rm
--- slightly modified
+-- raspberry pi dex
+-- slightly modified by its-asia on github
 
 local Players = game:GetService('Players')
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
@@ -9,6 +9,8 @@ local LocalPlayer = Players.LocalPlayer
 local getelysianpath = getelysianpath or function() -- does anyone use elysian anymore?
 	return 'dex/'
 end
+
+local get_nil_instances = get_nil_instances or getnilinstances
 
 local Tell = Notify and function(Text)
 	Notify(nil, 'dex', Text)
@@ -1927,7 +1929,7 @@ spawn(function()
 
 	local function getSelection()
 		if not GetSelection then return end
-		
+
 		local t = GetSelection:Invoke()
 		if t and #t > 0 then
 			return t[1]
@@ -1938,7 +1940,7 @@ spawn(function()
 
 	Mouse.Button1Down:connect(function()
 		if not SetSelection then return end
-		
+
 		if CurrentWindow == "Explorer" and Settings.ClickSelect then
 			local target = Mouse.Target
 			if target then
@@ -4187,7 +4189,7 @@ A GUI panel that displays the game hierarchy.
 		bindGetSelection.OnInvoke = function()
 			return Selection:Get()
 		end
-		
+
 		SetSelection = bindSetSelection
 		GetSelection = bindGetSelection
 	end
@@ -4570,7 +4572,7 @@ A GUI panel that displays the game hierarchy.
 
 	function rightClickMenu(sObj)
 		local mouse = LocalPlayer:GetMouse()
- -- cut is kept for the 1 nerd who uses cut to delete lol
+		-- cut is kept for the 1 nerd who uses cut to delete lol
 		currentRightClickMenu = CreateRightClickMenu(
 			{"Cut","Delete","Select Children","Teleport To",'Copy Path',"View Script","Save Instance","Call Remote",'Claim','View','Unview'},
 			"",
@@ -4637,7 +4639,7 @@ A GUI panel that displays the game hierarchy.
 				elseif option == "Copy Path" then
 					if not Option.Modifiable then return end
 					local GetInstancePath = GetInstancePath or function(x) return x:GetFullName() end
-					
+
 					local list = Selection:Get()
 					for i = 1,#list do
 						if list[i]:IsA("BasePart") then
@@ -4843,7 +4845,7 @@ A GUI panel that displays the game hierarchy.
 
 							local parentObj = parentNode.Object
 							local function parent(a,b)
-								a.Parent = b
+								Set(a, {Name = 'Parent', ValueType = 'Instance', tags = {}}, b)
 							end
 							if Option.Selectable then
 								local list = Selection.List
@@ -5319,7 +5321,7 @@ A GUI panel that displays the game hierarchy.
 		for i,v in pairs(RbxApi.GetProperties(obj.className)) do
 			if v["Name"] ~= "Parent" then
 				-- print("thispassed")
-				
+
 				table.insert(newObject.Properties,{Name = v["Name"], Type = v["ValueType"], Value = tostring(obj[v["Name"]])})
 			end
 		end
@@ -5583,6 +5585,7 @@ A GUI panel that displays the game hierarchy.
 		end)
 
 		-- PASTE
+		--[[
 		makeButton(ACTION_PASTE,ACTION_PASTE_OVER,"Paste",true,function() return #Selection:Get() > 0 and #clipboard > 0 end).MouseButton1Click:connect(function()
 			if not Option.Modifiable then return end
 			local parent = Selection.List[1] or workspace
@@ -5590,8 +5593,10 @@ A GUI panel that displays the game hierarchy.
 				clipboard[i]:Clone().Parent = parent
 			end
 		end)
-
+]]
+		
 		-- COPY
+		--[[
 		makeButton(ACTION_COPY,ACTION_COPY_OVER,"Copy",true,function() return #Selection:Get() > 0 end).MouseButton1Click:connect(function()
 			if not Option.Modifiable then return end
 			clipboard = {}
@@ -5601,24 +5606,16 @@ A GUI panel that displays the game hierarchy.
 			end
 			updateActions()
 		end)
-
+]]
+		
 		-- CUT
 		makeButton(ACTION_CUT,ACTION_CUT_OVER,"Cut",true,function() return #Selection:Get() > 0 end).MouseButton1Click:connect(function()
 			if not Option.Modifiable then return end
-			clipboard = {}
-			local list = Selection.List
-			local cut = {}
+			local list = Selection:Get()
 			for i = 1,#list do
-				local obj = list[i]:Clone()
-				if obj then
-					table.insert(clipboard,obj)
-					table.insert(cut,list[i])
-				end
+				pcall(delete,list[i])
 			end
-			for i = 1,#cut do
-				pcall(delete,cut[i])
-			end
-			updateActions()
+			Selection:Set({})
 		end)
 
 		-- FREEZE
@@ -6737,7 +6734,7 @@ Change log:
 			if CanEditProperty(v,propertyData) then
 				pcall(function()
 					--print("Setting " .. propertyName .. " to " .. tostring(value))
-					
+
 					ChangeProperty(object, propertyName, value)
 				end)
 			end

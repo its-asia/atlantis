@@ -4727,12 +4727,10 @@ A GUI panel that displays the game hierarchy.
 
 					local list = Selection:Get()
 					for i = 1,#list do
-						if list[i]:IsA("BasePart") then
-							pcall(function()
-								setclipboard(GetInstancePath(list[i]))
-							end)
-							break
-						end
+						pcall(function()
+							setclipboard(GetInstancePath(list[i]))
+						end)
+						break
 					end
 				elseif option == "Save Instance" then
 					if not Option.Modifiable then return end

@@ -9,7 +9,31 @@ if _G.ReplicateChanges then _G.ReplicateChanges = nil end
 local TopbarIndent = 36
 local ExplorerVersion = 'v2.0.1'
 
-local GuiColorReference = {
+local Services = {
+	'Workspace',
+	'Players',
+	'Lighting',
+	'NetworkClient',
+	'ReplicatedFirst',
+	'ReplicatedStorage',
+	'RobloxReplicatedStorage',
+	'ServerScriptService',
+	'ServerStorage',
+	'StarterGui',
+	'CoreGui',
+	'StarterPack',
+	'StarterPlayer',
+	'Teams',
+	'SoundService',
+	'Chat',
+	'LocalizationService',
+	'TestService',
+}
+
+local Settings
+local NodeLookup
+
+local GuiColor = {
 	Background      = Color3.new(233/255, 233/255, 233/255);
 	Border          = Color3.new(149/255, 149/255, 149/255);
 	Selected        = Color3.new( 96/255, 140/255, 211/255);
@@ -33,7 +57,9 @@ function CanEditObject(object)
 	return true -- Permissions.CanEdit
 end
 
-function CanEditProperty(object,propertyData)
+function CanEditProperty(object,propertyData,isAttribute)
+	if isAttribute then return true end
+	
 	local tags = propertyData["tags"]
 	for _,name in pairs(tags) do
 		if name == "readonly" then
@@ -1836,7 +1862,7 @@ spawn(function()
 		Frame.Name = 'SideTopbar'
 		Frame.Parent = SideMenu
 	end
-	
+
 	local OpenToggleButton = Gui:WaitForChild("Toggle")
 	do
 		local Frame = OpenToggleButton:FindFirstChild('ToggleTopbar') or Instance.new('Frame')
@@ -1867,7 +1893,7 @@ spawn(function()
 		Frame.ZIndex = OpenToggleButton.ZIndex
 		Frame.Parent = OpenToggleButton
 	end
-	
+
 	local CloseToggleButton = SideMenu:WaitForChild("Toggle")
 	local OpenScriptEditorButton = SideMenu:WaitForChild("OpenScriptEditor")
 
@@ -1963,20 +1989,20 @@ spawn(function()
 			end
 		end
 	end
-	
+
 	local lastToggled = tick()
 	local outPosition = UDim2.new(1, -330, 0, -TopbarIndent)
-	
+
 	function toggleDex(on)
 		local now = tick()
-		
+
 		lastToggled = now
-		
+
 		if on then
 			SideMenu:TweenPosition(outPosition, "Out", "Quad", 0.5, true)
 			OpenToggleButton:TweenPosition(UDim2.new(1,0,0,0), "Out", "Quad", 0.5, true)
 			switchWindows(CurrentWindow,true)
-			
+
 			delay(.5, function()
 				if lastToggled ~= now then return end
 				for _, child in pairs(OpenToggleButton:GetChildren()) do
@@ -1991,14 +2017,13 @@ spawn(function()
 
 				child.Visible = true
 			end
-			
+
 			SideMenu:TweenPosition(UDim2.new(1, 0, 0, 0), "Out", "Quad", 0.5, true)
 			OpenToggleButton:TweenPosition(UDim2.new(1,-30,0,0), "Out", "Quad", 0.5, true)
 			switchWindows("Nothing c:")
 		end
 	end
 
-	local Settings
 	function saveSettings()
 		writefile(getelysianpath() .. 'settings.json', game:GetService("HttpService"):JSONEncode(Settings))
 	end
@@ -2007,16 +2032,25 @@ spawn(function()
 		return game:GetService('HttpService'):JSONDecode(readfile(getelysianpath() .. 'settings.json'))
 	end
 
-	Settings = {
+	local DefaultSettings = {
 		ClickSelect = false,
 		SelBox = false,
 		ClearProps = false,
 		SelectUngrouped = true,
-		SaveInstanceScripts = true
+		SaveInstanceScripts = true,
+		AllServices = false,
 	}
+
+	Settings = DefaultSettings
 
 	if isfile and isfile(getelysianpath() .. 'settings.json') then
 		Settings = getSettings()
+
+		for Setting, Value in pairs(DefaultSettings) do
+			if not (Settings[Setting] == nil) then continue end
+
+			Settings[Setting] = Value
+		end
 	end
 
 	function ReturnSetting(set)
@@ -2026,7 +2060,7 @@ spawn(function()
 			return Settings.SelectUngrouped
 		end
 	end
-	
+
 	toggleDex(true)
 
 	table.insert(Connections, OpenToggleButton.MouseButton1Up:connect(function()
@@ -2054,7 +2088,7 @@ spawn(function()
 		table.insert(Connections, v.MouseLeave:connect(function()if CurrentWindow~=v.Name then v.BackgroundTransparency = 1 end end))
 	end
 
-	function createSetting(name,interName,defaultOn)
+	function createSetting(name,interName,defaultOn,func)
 		local newSetting = SettingTemplate:Clone()
 		newSetting.Position = UDim2.new(0,0,0,#SettingList:GetChildren() * 60)
 		newSetting.SName.Text = name
@@ -2076,7 +2110,9 @@ spawn(function()
 		end	
 
 		table.insert(Connections, newSetting.Change.MouseButton1Click:connect(function()
-			toggle(not Settings[interName])
+			local onoff = not Settings[interName]
+			toggle(onoff)
+			func(onoff)
 		end))
 
 		newSetting.Visible = true
@@ -2092,6 +2128,46 @@ spawn(function()
 	createSetting("Clear property value on focus","ClearProps",false)
 	createSetting("Select ungrouped models","SelectUngrouped",true)
 	createSetting("SaveInstance decompiles scripts","SaveInstanceScripts",true)
+	createSetting("Include All Services","AllServices",false,function(on)
+		if on then
+			for index, node in pairs(NodeLookup) do
+				local object = node.Object
+				if not object then continue end
+
+				local parent = node.Parent
+				if parent then continue end
+
+				local service
+				local success, err = pcall(function()
+					service = game:FindService(object.ClassName)
+				end)
+
+				if not success or success and not service then continue end
+				local parentNode = NodeLookup[game]
+
+				warn(parentNode, object.ClassName)
+
+				NodeLookup[index].Parent = parentNode
+			end
+		else
+			for index, node in pairs(NodeLookup) do
+				local object = node.Object
+				if not object then continue end
+
+				local parent = node.Parent
+				if not parent then continue end
+
+				local service
+				local success, err = pcall(function()
+					service = game:FindService(object.ClassName)
+				end)
+
+				if not success or success and not service then continue end
+
+				NodeLookup[index].Parent = nil
+			end
+		end
+	end)
 
 	do
 		local newSetting = SettingTemplate:Clone()
@@ -4120,7 +4196,7 @@ A GUI panel that displays the game hierarchy.
 	-- Holds the game tree converted to a list.
 	local TreeList = {}
 	-- Matches objects to their tree node representation.
-	local NodeLookup = {}
+	NodeLookup = {}
 
 	local nodeWidth = 0
 
@@ -4163,10 +4239,15 @@ A GUI panel that displays the game hierarchy.
 	local updateList,rawUpdateList,updateScroll,rawUpdateSize do
 		local function r(t)
 			for i = 1,#t do
-				if not filteringWorkspace() or scanName(t[i].Object) then
+				local Object = t[i].Object
+				if Object and Settings.AllServices == false and not table.find(Services, Object.ClassName) and Object.Parent == game then
+					continue
+				end
+
+				if not filteringWorkspace() or scanName(Object) then
 					TreeList[#TreeList+1] = t[i]
 
-					local w = (t[i].Depth)*(2+ENTRY_PADDING+GUI_SIZE) + 2 + ENTRY_SIZE + 4 + getTextWidth(t[i].Object.Name) + 4
+					local w = (t[i].Depth)*(2+ENTRY_PADDING+GUI_SIZE) + 2 + ENTRY_SIZE + 4 + getTextWidth(Object.Name) + 4
 					if w > nodeWidth then
 						nodeWidth = w
 					end
@@ -5601,6 +5682,10 @@ A GUI panel that displays the game hierarchy.
 			Depth = depth(object);
 		}
 
+		if object and Settings.AllServices == false and not table.find(Services, object.ClassName) and object.Parent == game then
+			objectNode.Parent = nil
+		end
+
 		connLookup[object] = Connect(object.AncestryChanged,function(c,p)
 			if c == object then
 				if p == nil then
@@ -5663,17 +5748,6 @@ A GUI panel that displays the game hierarchy.
 		end
 
 		updateDexStorageListeners()
-	--[[
-	local localDexStorage = readfile(getelysianpath().."DexStorage.txt")--game:GetService("CookiesService"):GetCookieValue("DexStorage")
-	--local success,err = pcall(function()
-		if localDexStorage then
-			local objTable = game:GetService("HttpService"):JSONDecode(localDexStorage)
-			for i,v in pairs(objTable) do
-				makeObject(v,DexStorageMain)
-			end
-		end
-	--end)
-	--]]
 	end
 
 	local dexStorageDebounce = false
@@ -5692,20 +5766,6 @@ A GUI panel that displays the game hierarchy.
 		updateDexStorageListeners()
 
 		dexStorageDebounce = false
-	--[[
-	local success,err = ypcall(function()
-		local objs = {}
-		for i,v in pairs(DexStorageMain:GetChildren()) do
-			table.insert(objs,writeObject(v))
-		end
-		writefile(getelysianpath().."DexStorage.txt",game:GetService("HttpService"):JSONEncode(objs))
-		--game:GetService("CookiesService"):SetCookieValue("DexStorage",game:GetService("HttpService"):JSONEncode(objs))
-	end)
-	if err then
-		CreateCaution("DexStorage Save Fail!","DexStorage broke! If you see this message, report to Raspberry Pi!")
-	end
-	print("hi")
-	--]]
 	end
 
 	function updateDexStorageListeners()
@@ -6073,11 +6133,11 @@ Change log:
 	
 --]]
 
-	wait(0.2)
+	-- wait(0.2)
 
-	local print = function(s)
-		print(tostring(s))
-	end
+	-- local print = function(s) REPLACE PRINT WHILE NOT DEBUGGING
+	--	print(tostring(s))
+	-- end
 
 	-- Services
 	local Teams = game:GetService("Teams")
@@ -6993,13 +7053,17 @@ Change log:
 		return box
 	end
 
-	function GetControl(object, propertyData, readOnly)
+	Controls.boolean = Controls['bool']
+	Controls.Enums = Controls['Enum']
+	Controls.Instance = Controls['Object']
+	
+	function GetControl(object, propertyData, readOnly, isAttribute)
 		local propertyType = propertyData["ValueType"]
 		local control = nil
 
 		if Controls[propertyType] then
 			control = Controls[propertyType](object, propertyData, readOnly)
-		elseif RbxApi.IsEnum(propertyType) then
+		elseif not isAttribute and RbxApi.IsEnum(propertyType) then
 			control = Controls["Enum"](object, propertyData, readOnly)
 		else
 			control = Controls["default"](object, propertyData, readOnly)
@@ -7019,18 +7083,23 @@ Change log:
 		return false
 	end
 
-	function CreateRow(object, propertyData, isAlternateRow)
+	function CreateRow(object, propertyData, isAlternateRow, isTitle, isAttribute)
 		local propertyName = propertyData["Name"]
 		local propertyType = propertyData["ValueType"]
-		local propertyValue = object[propertyName]
-		--rowValue, rowValueType, isAlternate
+
+		-- local propertyValue = object[propertyName]
+		-- rowValue, rowValueType, isAlternate
+
 		local backColor = Row.BackgroundColor;
 		if (isAlternateRow) then
 			backColor = Row.BackgroundColorAlternate
 		end
 
-		local readOnly = not CanEditProperty(object, propertyData)
-		if propertyType == "Instance" or propertyName == "Parent" then readOnly = true end
+		local readOnly = object and not CanEditProperty(object, propertyData, isAttribute)
+		if not object then readonly = true end
+		
+		if isAttribute then readonly = false end
+		if propertyType and propertyType == "Instance" or propertyName and propertyName == "Parent" then readOnly = true end
 
 		local rowFrame = Instance.new("Frame")
 		rowFrame.Size = UDim2.new(1,0,0,Row.Height)
@@ -7047,25 +7116,40 @@ Change log:
 		propertyLabel.Position = UDim2.new(0, Row.TitleMarginLeft, 0, 0)
 		propertyLabel.Parent = propertyLabelFrame
 
-		local propertyValueFrame = CreateCell()
-		propertyValueFrame.Size = UDim2.new(0.5, -1, 1, 0)
-		propertyValueFrame.Position = UDim2.new(0.5, 0, 0, 0)
-		propertyValueFrame.Parent = rowFrame
+		local propertyValueFrame
+		if not isTitle then
+			propertyValueFrame = CreateCell()
 
-		local control = GetControl(object, propertyData, readOnly)
-		control.Parent = propertyValueFrame
+			propertyValueFrame.Size = UDim2.new(0.5, -1, 1, 0)
+			propertyValueFrame.Position = UDim2.new(0.5, 0, 0, 0)
+			propertyValueFrame.Parent = rowFrame
+
+			local control = GetControl(object, propertyData, readOnly, isAttribute)
+			control.Parent = propertyValueFrame
+
+			propertyValueFrame.BackgroundColor3 = backColor
+		else
+			propertyLabelFrame.Size = UDim2.new(1, 0, 1, 0)
+
+			propertyLabel.Size = UDim2.new(1, 0, 1, 0)
+			propertyLabel.Position = UDim2.new(0, 0, 0, 0)
+
+			propertyLabel.TextXAlignment = Enum.TextXAlignment.Center
+		end
 
 		table.insert(Connections, rowFrame.MouseEnter:connect(function()
 			propertyLabelFrame.BackgroundColor3 = Row.BackgroundColorMouseover
-			propertyValueFrame.BackgroundColor3 = Row.BackgroundColorMouseover
+
+			if propertyValueFrame then propertyValueFrame.BackgroundColor3 = Row.BackgroundColorMouseover end
 		end))
+
 		table.insert(Connections, rowFrame.MouseLeave:connect(function()
 			propertyLabelFrame.BackgroundColor3 = backColor
-			propertyValueFrame.BackgroundColor3 = backColor
+
+			if propertyValueFrame then propertyValueFrame.BackgroundColor3 = backColor end
 		end))
 
 		propertyLabelFrame.BackgroundColor3 = backColor
-		propertyValueFrame.BackgroundColor3 = backColor
 
 		return rowFrame
 	end
@@ -7077,12 +7161,30 @@ Change log:
 	end
 
 	local selection = Gui:FindFirstChild("Selection", 1)
-	print(selection)
+	
+	-- print(selection)
 
-	function displayProperties(props)
+	function displayProperties(props, attributes)
 		for i,v in pairs(props) do
 			pcall(function()
 				local a = CreateRow(v.object, v.propertyData, ((numRows % 2) == 0))
+				a.Position = UDim2.new(0,0,0,numRows*Row.Height)
+				a.Parent = ContentFrame
+				numRows = numRows + 1
+			end)
+		end
+		local success, err = pcall(function()
+			local a = CreateRow(nil, {Name = '-- Attributes --'}, ((numRows % 2) == 0), true)
+			a.Position = UDim2.new(0,0,0,numRows*Row.Height)
+			a.Parent = ContentFrame
+			numRows = numRows + 1
+		end)
+		if not success then
+			Tell(err)
+		end
+		for i,v in pairs(attributes) do
+			pcall(function()
+				local a = CreateRow(v.object, v.propertyData, ((numRows % 2) == 0), nil, true)
 				a.Position = UDim2.new(0,0,0,numRows*Row.Height)
 				a.Parent = ContentFrame
 				numRows = numRows + 1
@@ -7108,8 +7210,13 @@ Change log:
 	function showProperties(obj)
 		ClearPropertiesList()
 		if obj == nil then return end
+
 		local propHolder = {}
+		local attributeHolder = {}
+
 		local foundProps = {}
+		local foundAttributes = {}
+
 		numRows = 0
 		for _,nextObj in pairs(obj) do
 			if not foundProps[nextObj.className] then
@@ -7128,9 +7235,28 @@ Change log:
 				end
 			end
 		end
+
+		for _,nextObj in pairs(obj) do
+			for name,value in pairs(nextObj:GetAttributes()) do -- XD XD XD XD XD XD XD FUNNY 2
+				if not foundAttributes[name] then
+					foundAttributes[name] = true
+					warn(name, value)
+					if string.find(string.lower(name),string.lower(propertiesSearch.Text)) or not searchingProperties() then
+						table.insert(attributeHolder,{propertyData = {Name = name, ValueType = typeof(value), tags = {}}, object = nextObj})
+					end
+				end
+			end
+
+			break
+		end
+
 		sortProps(propHolder)
-		displayProperties(propHolder)
+		sortProps(attributeHolder)
+
+		displayProperties(propHolder, attributeHolder)
+
 		ContentFrame.Size = UDim2.new(1, 0, 0, numRows * Row.Height)
+
 		scrollBar.ScrollIndex = 0
 		scrollBar.TotalSpace = numRows * Row.Height
 		scrollBar.Update()

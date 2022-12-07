@@ -6,10 +6,15 @@ local ReplicatedStorage = game:GetService('ReplicatedStorage')
 local Lighting = game:GetService('Lighting')
 
 local LocalPlayer = Players.LocalPlayer
+local Folder = 'raspberryPi'
 
 local get_nil_instances = get_nil_instances or getnilinstances
+if not getelysianpath and isfolder and makefolder and not isfolder(Folder) then
+	makefolder(Folder)
+end
+
 local getelysianpath = getelysianpath or function() -- does anyone use elysian anymore?
-	return 'raspberryPi/'
+	return Folder .. '/'
 end
 
 local Tell = Notify and function(Text)
@@ -1762,7 +1767,7 @@ spawn(function()
 	local SettingsButton = SlideFrame:WaitForChild("Settings")
 
 	local SelectionBox = CreateSelectionBox and CreateSelectionBox() or Instance.new("SelectionBox") -- do i have too many functions? yes. yes i do.
-	
+
 	SelectionBox.Parent = Gui
 
 	local ExplorerPanel = Gui:WaitForChild("ExplorerPanel")
@@ -1856,7 +1861,7 @@ spawn(function()
 			switchWindows("Nothing c:")
 		end
 	end
-	
+
 	local Settings
 	function saveSettings()
 		writefile(getelysianpath() .. 'settings.json', game:GetService("HttpService"):JSONEncode(Settings))
@@ -1873,10 +1878,10 @@ spawn(function()
 		SelectUngrouped = true,
 		SaveInstanceScripts = true
 	}
-	
+
 	if isfile and isfile(getelysianpath() .. 'settings.json') then
 		Settings = getSettings()
-		
+
 		Tell('loaded saved settings')
 	end
 
@@ -1912,7 +1917,7 @@ spawn(function()
 		table.insert(Connections, v.MouseEnter:connect(function()v.BackgroundTransparency = 0.5 end))
 		table.insert(Connections, v.MouseLeave:connect(function()if CurrentWindow~=v.Name then v.BackgroundTransparency = 1 end end))
 	end
-	
+
 	function createSetting(name,interName,defaultOn)
 		local newSetting = SettingTemplate:Clone()
 		newSetting.Position = UDim2.new(0,0,0,#SettingList:GetChildren() * 60)
@@ -1930,7 +1935,7 @@ spawn(function()
 				newSetting.Status.Text = "Off"
 				Settings[interName] = false
 			end
-			
+
 			saveSettings()
 		end	
 
@@ -1951,7 +1956,7 @@ spawn(function()
 	createSetting("Clear property value on focus","ClearProps",false)
 	createSetting("Select ungrouped models","SelectUngrouped",true)
 	createSetting("SaveInstance decompiles scripts","SaveInstanceScripts",true)
-	
+
 	do
 		local newSetting = SettingTemplate:Clone()
 		newSetting.Position = UDim2.new(0,0,0,#SettingList:GetChildren() * 60)
@@ -1960,24 +1965,24 @@ spawn(function()
 		table.insert(Connections, newSetting.Change.MouseButton1Click:connect(function()
 			newSetting.Change.Bar:TweenPosition(UDim2.new(0,-2,0,-2),Enum.EasingDirection.Out,Enum.EasingStyle.Quart,0.25,true)
 			newSetting.Change.OnBar:TweenSize(UDim2.new(0,0,0,15),Enum.EasingDirection.Out,Enum.EasingStyle.Quart,0.25,true)
-			
+
 			newSetting.Status.Text = "Off"
-			
+
 			wait(.25)
-			
+
 			Gui.Enabled = false
 			Gui.Name = 'disabledDex'
 			Gui.Parent = nil
-			
+
 			Gui:Destroy()
 		end))
 
 		newSetting.Visible = true
 		newSetting.Parent = SettingList
-		
+
 		newSetting.Change.Bar:TweenPosition(UDim2.new(0,32,0,-2),Enum.EasingDirection.Out,Enum.EasingStyle.Quart,0.25,true)
 		newSetting.Change.OnBar:TweenSize(UDim2.new(0,34,0,15),Enum.EasingDirection.Out,Enum.EasingStyle.Quart,0.25,true)
-		
+
 		newSetting.Status.Text = "On"
 	end
 
@@ -2768,9 +2773,9 @@ A GUI panel that displays the game hierarchy.
 			local a = {...}
 			spawn(function() func(unpack(a)) end)
 		end)
-		
+
 		table.insert(Connections, connection)
-		
+
 		return connection
 	end
 
@@ -2809,9 +2814,9 @@ A GUI panel that displays the game hierarchy.
 					SetZIndex(object,object.ZIndex)
 				end
 			end)
-			
+
 			table.insert(Connections, ZIndexChanged)
-			
+
 			return ZIndexChanged
 		end
 	end
@@ -2859,12 +2864,12 @@ A GUI panel that displays the game hierarchy.
 					});
 				})
 			end
-			
+
 			local IconMap = IconFrame and IconFrame:FindFirstChild('IconMap')
 			if IconMap then
 				IconMap.Position = UDim2.new(-col - (pad*(col+1) + border)/iconSize,0,-row - (pad*(row+1) + border)/iconSize,0)
 			end
-			
+
 			return IconFrame
 		end
 	end
@@ -4276,7 +4281,7 @@ A GUI panel that displays the game hierarchy.
 		newCaution.MainWindow.Desc.Text = msg
 		newCaution.Parent = explorerPanel.Parent
 		newCaution.Visible = true
-		
+
 		table.insert(Connections, newCaution.MainWindow.Ok.MouseButton1Up:connect(function()
 			newCaution:Destroy()
 		end))
@@ -4301,7 +4306,7 @@ A GUI panel that displays the game hierarchy.
 		end
 		newCaution.Parent = explorerPanel.Parent
 		newCaution.Visible = true
-		
+
 		table.insert(Connections, newCaution.MainWindow.Ok.MouseButton1Up:connect(function()
 			newCaution:Destroy()
 		end))
@@ -4469,7 +4474,7 @@ A GUI panel that displays the game hierarchy.
 		local newArgument = ArgumentTemplate:Clone()
 		newArgument.Parent = ArgumentList
 		newArgument.Visible = true
-		
+
 		table.insert(Connections, newArgument.Type.MouseButton1Down:connect(function()
 			createDDown(newArgument.Type,function(choice)
 				newArgument.Type.Text = choice
@@ -4512,7 +4517,7 @@ A GUI panel that displays the game hierarchy.
 				newArgument.Parent = ArgumentList
 				ArgumentList.CanvasSize = UDim2.new(0,0,0,#ArgumentList:GetChildren() * 20)
 				newArgument.Visible = true
-				
+
 				table.insert(Connections, newArgument.Type.MouseButton1Down:connect(function()
 					createDDown(newArgument.Type,function(choice)
 						newArgument.Type.Text = choice
@@ -5687,7 +5692,7 @@ A GUI panel that displays the game hierarchy.
 			updateActions()
 		end)
 		]]
-		
+
 		-- CUT
 		makeButton(ACTION_CUT,ACTION_CUT_OVER,"Cut",true,function() return #Selection:Get() > 0 end).MouseButton1Click:connect(function()
 			if not Option.Modifiable then return end
@@ -6981,9 +6986,9 @@ Change log:
 				SetZIndex(object,object.ZIndex)
 			end
 		end)
-		
+
 		table.insert(Connections, zindexchanged)
-		
+
 		return zindexchanged
 	end
 	function Create(ty,data)
@@ -7689,9 +7694,9 @@ spawn(function()
 				SetZIndex(object,object.ZIndex)
 			end
 		end)
-		
+
 		table.insert(Connections, zindexchanged)
-		
+
 		return zindexchanged
 	end
 	function Create(ty,data)

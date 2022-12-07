@@ -1,6 +1,54 @@
 -- raspberry pi dex
 -- slightly modified by its-asia on github
 
+local ReplicateChanges = _G.ReplicateChanges
+if ReplicateChanges == nil then ReplicateChanges = false end
+
+if _G.ReplicateChanges then _G.ReplicateChanges = nil end
+
+local GetSelectionFunction
+function CanEditObject(object)
+	-- local player = Players.LocalPlayer
+	-- local character = player.Character
+
+	return true -- Permissions.CanEdit
+end
+
+function CanEditProperty(object,propertyData)
+	local tags = propertyData["tags"]
+	for _,name in pairs(tags) do
+		if name == "readonly" then
+			return false
+		end
+	end
+
+	return CanEditObject(object)
+end
+
+local function Set(object, propertyData, value)
+	local propertyName = propertyData["Name"]
+	local propertyType = propertyData["ValueType"]
+
+	if value == nil then return end
+	for i,v in pairs(GetSelectionFunction()) do
+		if CanEditProperty(v,propertyData) then
+			pcall(function()
+				--print("Setting " .. propertyName .. " to " .. tostring(value))
+
+				if not ReplicateChanges then object[propertyName] = value return end
+
+				ChangeProperty(object, propertyName, value)
+			end)
+		end
+	end
+end
+
+local function delete(o)
+	if not ReplicateChanges then return o:Destroy() end
+
+	Destroy(o)
+end
+
 local Players = game:GetService('Players')
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
 local Lighting = game:GetService('Lighting')
@@ -18,7 +66,7 @@ local getelysianpath = getelysianpath or function() -- does anyone use elysian a
 end
 
 local Tell = Notify and function(Text)
-	Notify(nil, 'dex', Text)
+	Notify(nil, 'dex ' .. (ReplicateChanges and '(ss)' or '(cs)'), Text)
 end or printconsole and function(Text)
 	printconsole(Text, 255, 255, 255)
 end or warn
@@ -29,6 +77,8 @@ if not RbxApi then
 
 	return
 end
+
+Tell('loading dex, please wait')
 
 local CreateGui = function()
 	local NewGuiPart1 = Instance.new("ScreenGui")
@@ -1066,7 +1116,8 @@ local CreateGui = function()
 	NewGuiPart82.BackgroundColor3 = Color3.new(0.913726, 0.913726, 0.913726)
 	NewGuiPart82.BorderColor3 = Color3.new(0.584314, 0.584314, 0.584314)
 	NewGuiPart82.Draggable = true
-	NewGuiPart82.Position = UDim2.new(0.300000012, 0, 0.300000012, 0)
+	NewGuiPart82.Position = UDim2.new(0.5, 0, 0.5, 0)
+	NewGuiPart82.AnchorPoint = Vector2.new(.5, .5)
 	NewGuiPart82.Size = UDim2.new(0, 516, 0, 20)
 	NewGuiPart82.Visible = false
 	NewGuiPart82.ZIndex = 5
@@ -3944,7 +3995,8 @@ A GUI panel that displays the game hierarchy.
 				hideMenu()
 			end
 
-			for i,name in pairs(choices) do
+			for i = 1, #choices do
+				local name = choices[i]
 				local option = CreateRightClickMenuItem(name, function()
 					choice(name)
 				end)
@@ -3976,10 +4028,6 @@ A GUI panel that displays the game hierarchy.
 	end
 
 	local clipboard = {}
-	local function delete(o)
-		Destroy(o)
-	end
-
 	local getTextWidth do
 		local text = Create('TextLabel',{
 			Name = "TextWidth";
@@ -4657,19 +4705,135 @@ A GUI panel that displays the game hierarchy.
 
 	function rightClickMenu(sObj)
 		local mouse = LocalPlayer:GetMouse()
+
+		local rightClickMenuOptions = {"Cut","Delete","Select Children","Teleport To",'Copy Path',"View Script","Save Instance","Call Remote",}
+		if not ReplicateChanges then
+			table.insert(rightClickMenuOptions, 'Copy')
+			table.insert(rightClickMenuOptions, 'Duplicate')
+
+			table.insert(rightClickMenuOptions, 'Paste Into')
+
+			table.insert(rightClickMenuOptions, 'Group')
+			table.insert(rightClickMenuOptions, 'Ungroup')
+
+			table.insert(rightClickMenuOptions, 'Insert Part')
+			table.insert(rightClickMenuOptions, 'Insert Object')
+		end
+		
+		if ReplicateChanges then
+			table.insert(rightClickMenuOptions, 'Claim')
+		end
+		
+		table.insert(rightClickMenuOptions, 'View')
+		table.insert(rightClickMenuOptions, 'Unview')
+
 		-- cut is kept for the 1 nerd who uses cut to delete lol
 		currentRightClickMenu = CreateRightClickMenu(
-			{"Cut","Delete","Select Children","Teleport To",'Copy Path',"View Script","Save Instance","Call Remote",'Claim','View','Unview'},
+			rightClickMenuOptions,
 			"",
 			false,
 			function(option)
-				if option == "Delete" or option == "Cut" then
+				if option == "Delete" or (option == "Cut" and ReplicateChanges) then
 					if not Option.Modifiable then return end
 					local list = Selection:Get()
 					for i = 1,#list do
 						pcall(delete,list[i])
 					end
 					Selection:Set({})
+				elseif option == 'Cut' and not ReplicateChanges then
+					if not Option.Modifiable then return end
+
+					clipboard = {}
+
+					local list = Selection.List
+					local cut = {}
+
+					for i = 1,#list do
+						local obj = list[i]:Clone()
+						if obj then
+							table.insert(clipboard,obj)
+							table.insert(cut,list[i])
+						end
+					end
+
+					for i = 1,#cut do
+						pcall(delete,cut[i])
+					end
+
+					updateActions()
+				elseif option == 'Copy' then
+					if not Option.Modifiable then return end
+
+					clipboard = {}
+
+					local list = Selection.List
+					for i = 1,#list do
+						table.insert(clipboard,list[i]:Clone())
+					end
+
+					updateActions()
+				elseif option == 'Paste Into' then
+					if not Option.Modifiable then return end
+
+					local parent = Selection.List[1] or workspace
+					for i = 1,#clipboard do
+						clipboard[i]:Clone().Parent = parent
+					end
+				elseif option == 'Duplicate' then
+					if not Option.Modifiable then return end
+
+					local list = Selection:Get()
+					for i = 1,#list do
+						list[i]:Clone().Parent = Selection.List[1].Parent or workspace
+					end
+				elseif option == 'Group' then
+					if not Option.Modifiable then return end
+
+					local newModel = Instance.new("Model")
+					local list = Selection:Get()
+
+					newModel.Parent = Selection.List[1].Parent or workspace
+
+					for i = 1,#list do
+						list[i].Parent = newModel
+					end
+
+					Selection:Set({})
+				elseif option == 'Ungroup' then
+					if not Option.Modifiable then return end
+
+					local ungrouped = {}
+					local list = Selection:Get()
+					for i = 1,#list do
+						if list[i]:IsA("Model") then
+							for i2,v2 in pairs(list[i]:GetChildren()) do
+								v2.Parent = list[i].Parent or workspace
+								table.insert(ungrouped,v2)
+							end		
+							pcall(delete,list[i])			
+						end
+					end
+
+					Selection:Set({})
+
+					if SettingsRemote:Invoke("SelectUngrouped") then
+						for i,v in pairs(ungrouped) do
+							Selection:Add(v)
+						end
+					end
+				elseif option == 'Insert Part' then
+					if not Option.Modifiable then return end
+
+					local insertedParts = {}
+					local list = Selection:Get()
+					for i = 1,#list do
+						pcall(function()
+							local newPart = Instance.new("Part")
+							newPart.Parent = list[i]
+							newPart.CFrame = CFrame.new(LocalPlayer.Character.Head.Position) + Vector3.new(0, (LocalPlayer.Character.Head.Size.Y / 2) + (newPart.Size.Y / 2), 0)
+							table.insert(insertedParts,newPart)
+						end)
+					end
 				elseif option == "Select Children" then
 					if not Option.Modifiable then return end
 					local list = Selection:Get()
@@ -5651,9 +5815,6 @@ A GUI panel that displays the game hierarchy.
 		end
 
 		--local clipboard = {}
-		local function delete(o)
-			Destroy(o)
-		end
 
 		makeButton(ACTION_EDITQUICKACCESS,ACTION_EDITQUICKACCESS,"Options",true,function()return true end).MouseButton1Click:connect(function()
 
@@ -5949,7 +6110,7 @@ Change log:
 		return false
 	end
 
-	local function GetSelection()
+	GetSelectionFunction = function()
 		local selection = bindGetSelection:Invoke()
 		if #selection == 0 then
 			return nil
@@ -6776,24 +6937,6 @@ Change log:
 		end
 		return control
 	end
-	-- Permissions
-
-	function CanEditObject(object)
-		local player = Players.LocalPlayer
-		local character = player.Character
-		return Permissions.CanEdit
-	end
-
-	function CanEditProperty(object,propertyData)
-		local tags = propertyData["tags"]
-		for _,name in pairs(tags) do
-			if name == "readonly" then
-				return false
-			end
-		end
-		return CanEditObject(object)
-	end
-
 	--RbxApi
 	local function PropertyIsHidden(propertyData)
 		local tags = propertyData["tags"]
@@ -6805,23 +6948,6 @@ Change log:
 			end
 		end
 		return false
-	end
-
-	function Set(object, propertyData, value)
-		local propertyName = propertyData["Name"]
-		local propertyType = propertyData["ValueType"]
-
-		if value == nil then return end
-
-		for i,v in pairs(GetSelection()) do
-			if CanEditProperty(v,propertyData) then
-				pcall(function()
-					--print("Setting " .. propertyName .. " to " .. tostring(value))
-
-					ChangeProperty(object, propertyName, value)
-				end)
-			end
-		end
 	end
 
 	function CreateRow(object, propertyData, isAlternateRow)
@@ -7588,10 +7714,10 @@ Change log:
 	scrollBar.VisibleSpace = math.ceil(MainFrame.AbsoluteSize.y)
 	scrollBar:Update()
 
-	showProperties(GetSelection())
+	showProperties(GetSelectionFunction())
 
 	table.insert(Connections, bindSelectionChanged.Event:connect(function()
-		showProperties(GetSelection())
+		showProperties(GetSelectionFunction())
 	end))
 
 	table.insert(Connections, bindSetAwait.Event:connect(function(obj)
@@ -7608,7 +7734,7 @@ Change log:
 
 	table.insert(Connections, propertiesSearch.Changed:connect(function(prop)
 		if prop == "Text" then
-			showProperties(GetSelection())
+			showProperties(GetSelectionFunction())
 		end
 	end))
 

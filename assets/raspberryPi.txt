@@ -6,6 +6,25 @@ if ReplicateChanges == nil then ReplicateChanges = false end
 
 if _G.ReplicateChanges then _G.ReplicateChanges = nil end
 
+local TopbarIndent = 36
+local ExplorerVersion = 'v2.0.1'
+
+local GuiColorReference = {
+	Background      = Color3.new(233/255, 233/255, 233/255);
+	Border          = Color3.new(149/255, 149/255, 149/255);
+	Selected        = Color3.new( 96/255, 140/255, 211/255);
+	BorderSelected  = Color3.new( 86/255, 125/255, 188/255);
+	Text            = Color3.new(  0/255,   0/255,   0/255);
+	TextDisabled    = Color3.new(128/255, 128/255, 128/255);
+	TextSelected    = Color3.new(255/255, 255/255, 255/255);
+	Button          = Color3.new(221/255, 221/255, 221/255);
+	ButtonBorder    = Color3.new(149/255, 149/255, 149/255);
+	ButtonSelected  = Color3.new(255/255,   0/255,   0/255);
+	Field           = Color3.new(255/255, 255/255, 255/255);
+	FieldBorder     = Color3.new(191/255, 191/255, 191/255);
+	TitleBackground = Color3.new(178/255, 178/255, 178/255);
+}
+
 local GetSelectionFunction
 function CanEditObject(object)
 	-- local player = Players.LocalPlayer
@@ -330,7 +349,7 @@ local CreateGui = function()
 	NewGuiPart7.BackgroundTransparency = 1
 	NewGuiPart7.BorderColor3 = Color3.new(0.584314, 0.584314, 0.584314)
 	NewGuiPart7.BorderSizePixel = 0
-	NewGuiPart7.Position = UDim2.new(1, -330, 0, 0)
+	NewGuiPart7.Position = UDim2.new(1, -330, 0, -TopbarIndent)
 	NewGuiPart7.Size = UDim2.new(0, 30, 0, 180)
 	NewGuiPart7.Visible = false
 	NewGuiPart7.ZIndex = 2
@@ -355,8 +374,8 @@ local CreateGui = function()
 	NewGuiPart9.BackgroundTransparency = 1
 	NewGuiPart9.Size = UDim2.new(0, 30, 0, 20)
 	NewGuiPart9.ZIndex = 2
-	NewGuiPart9.Font = Enum.Font.SourceSansBold
-	NewGuiPart9.FontSize = Enum.FontSize.Size14
+	NewGuiPart9.Font = Enum.Font.GothamBold
+	NewGuiPart9.TextSize = 12
 	NewGuiPart9.Text = "DEX"
 	NewGuiPart9.TextWrapped = true
 
@@ -367,9 +386,9 @@ local CreateGui = function()
 	NewGuiPart10.Position = UDim2.new(0, 0, 0, 15)
 	NewGuiPart10.Size = UDim2.new(0, 30, 0, 20)
 	NewGuiPart10.ZIndex = 2
-	NewGuiPart10.Font = Enum.Font.SourceSansBold
-	NewGuiPart10.FontSize = Enum.FontSize.Size12
-	NewGuiPart10.Text = "V2.0.1"
+	NewGuiPart10.Font = Enum.Font.Gotham
+	NewGuiPart10.TextSize = 10
+	NewGuiPart10.Text = ExplorerVersion
 	NewGuiPart10.TextWrapped = true
 
 	NewGuiPart11.Name = "Slant"
@@ -1339,8 +1358,8 @@ local CreateGui = function()
 	NewGuiPart107.Position = UDim2.new(0, 100, 0, 150)
 	NewGuiPart107.Size = UDim2.new(0, 100, 0, 60)
 	NewGuiPart107.ZIndex = 2
-	NewGuiPart107.Font = Enum.Font.SourceSansBold
-	NewGuiPart107.FontSize = Enum.FontSize.Size60
+	NewGuiPart107.Font = Enum.Font.GothamBold
+	NewGuiPart107.FontSize = Enum.FontSize.Size48
 	NewGuiPart107.Text = "DEX"
 	NewGuiPart107.TextWrapped = true
 
@@ -1351,9 +1370,9 @@ local CreateGui = function()
 	NewGuiPart108.Position = UDim2.new(0, 100, 0, 210)
 	NewGuiPart108.Size = UDim2.new(0, 100, 0, 30)
 	NewGuiPart108.ZIndex = 2
-	NewGuiPart108.Font = Enum.Font.SourceSansBold
-	NewGuiPart108.FontSize = Enum.FontSize.Size28
-	NewGuiPart108.Text = "V2.0.0"
+	NewGuiPart108.Font = Enum.Font.GothamMedium
+	NewGuiPart108.FontSize = Enum.FontSize.Size24
+	NewGuiPart108.Text = ExplorerVersion
 	NewGuiPart108.TextWrapped = true
 
 	NewGuiPart109.Name = "Creator"
@@ -1365,7 +1384,7 @@ local CreateGui = function()
 	NewGuiPart109.ZIndex = 2
 	NewGuiPart109.Font = Enum.Font.SourceSansBold
 	NewGuiPart109.FontSize = Enum.FontSize.Size28
-	NewGuiPart109.Text = "Raspberry Pi, Script Made By Advancedev, edited by its-asia on github"
+	NewGuiPart109.Text = "Raspberry Pi, Script Made By Advancedev(?), fixed & edited by its-asia on github"
 	NewGuiPart109.TextWrapped = true
 
 	NewGuiPart110.Name = "Slant"
@@ -1802,9 +1821,53 @@ spawn(function()
 	local Gui = D_E_X
 
 	local IntroFrame = Gui:WaitForChild("IntroFrame")
-
 	local SideMenu = Gui:WaitForChild("SideMenu")
+	do
+		local Frame = Instance.new('Frame')
+
+		Frame.BorderSizePixel = 0
+
+		Frame.BackgroundColor3 = GuiColor.Background
+		Frame.AnchorPoint = Vector2.new(0, 1)
+
+		Frame.Position = UDim2.new(1, -30, 0, TopbarIndent)
+		Frame.Size = UDim2.new(0, 330, 0, 100)
+
+		Frame.Name = 'SideTopbar'
+		Frame.Parent = SideMenu
+	end
+	
 	local OpenToggleButton = Gui:WaitForChild("Toggle")
+	do
+		local Frame = OpenToggleButton:FindFirstChild('ToggleTopbar') or Instance.new('Frame')
+		local Slant = OpenToggleButton:FindFirstChild('ToggleSlant') or Instance.new('ImageLabel')
+
+		OpenToggleButton.BorderSizePixel = 0
+		Frame.BorderSizePixel = 0
+
+		Frame.BackgroundColor3 = GuiColor.Background
+		Frame.AnchorPoint = Vector2.new(0, 1)
+
+		Frame.Position = UDim2.new(1, -30, 0, 0)
+		Frame.Size = UDim2.new(0, 330, 0, 100)
+
+		Slant.BackgroundTransparency = 1
+		Slant.Rotation = 180
+		Slant.Image = 'rbxassetid://474172996'
+
+		Slant.ImageColor3 = Color3.fromRGB(233, 233, 233)
+		Slant.Position = UDim2.new(0, -70, 0, -46)
+		Slant.Size = UDim2.new(0, 70, 0, 75)
+
+		Slant.Name = 'ToggleSlant'
+		Slant.ZIndex = OpenToggleButton.ZIndex
+		Slant.Parent = OpenToggleButton
+
+		Frame.Name = 'ToggleTopbar'
+		Frame.ZIndex = OpenToggleButton.ZIndex
+		Frame.Parent = OpenToggleButton
+	end
+	
 	local CloseToggleButton = SideMenu:WaitForChild("Toggle")
 	local OpenScriptEditorButton = SideMenu:WaitForChild("OpenScriptEditor")
 
@@ -1900,13 +1963,35 @@ spawn(function()
 			end
 		end
 	end
-
+	
+	local lastToggled = tick()
+	local outPosition = UDim2.new(1, -330, 0, -TopbarIndent)
+	
 	function toggleDex(on)
+		local now = tick()
+		
+		lastToggled = now
+		
 		if on then
-			SideMenu:TweenPosition(UDim2.new(1, -330, 0, 0), "Out", "Quad", 0.5, true)
+			SideMenu:TweenPosition(outPosition, "Out", "Quad", 0.5, true)
 			OpenToggleButton:TweenPosition(UDim2.new(1,0,0,0), "Out", "Quad", 0.5, true)
 			switchWindows(CurrentWindow,true)
+			
+			delay(.5, function()
+				if lastToggled ~= now then return end
+				for _, child in pairs(OpenToggleButton:GetChildren()) do
+					if not child:IsA('GuiObject') then continue end
+
+					child.Visible = false
+				end
+			end)
 		else
+			for _, child in pairs(OpenToggleButton:GetChildren()) do
+				if not child:IsA('GuiObject') then continue end
+
+				child.Visible = true
+			end
+			
 			SideMenu:TweenPosition(UDim2.new(1, 0, 0, 0), "Out", "Quad", 0.5, true)
 			OpenToggleButton:TweenPosition(UDim2.new(1,-30,0,0), "Out", "Quad", 0.5, true)
 			switchWindows("Nothing c:")
@@ -1932,8 +2017,6 @@ spawn(function()
 
 	if isfile and isfile(getelysianpath() .. 'settings.json') then
 		Settings = getSettings()
-
-		Tell('loaded saved settings')
 	end
 
 	function ReturnSetting(set)
@@ -1943,6 +2026,8 @@ spawn(function()
 			return Settings.SelectUngrouped
 		end
 	end
+	
+	toggleDex(true)
 
 	table.insert(Connections, OpenToggleButton.MouseButton1Up:connect(function()
 		toggleDex(true)
@@ -2502,22 +2587,6 @@ A GUI panel that displays the game hierarchy.
 			end
 		end
 	end
-
-	local GuiColor = {
-		Background      = Color3.new(233/255, 233/255, 233/255);
-		Border          = Color3.new(149/255, 149/255, 149/255);
-		Selected        = Color3.new( 96/255, 140/255, 211/255);
-		BorderSelected  = Color3.new( 86/255, 125/255, 188/255);
-		Text            = Color3.new(  0/255,   0/255,   0/255);
-		TextDisabled    = Color3.new(128/255, 128/255, 128/255);
-		TextSelected    = Color3.new(255/255, 255/255, 255/255);
-		Button          = Color3.new(221/255, 221/255, 221/255);
-		ButtonBorder    = Color3.new(149/255, 149/255, 149/255);
-		ButtonSelected  = Color3.new(255/255,   0/255,   0/255);
-		Field           = Color3.new(255/255, 255/255, 255/255);
-		FieldBorder     = Color3.new(191/255, 191/255, 191/255);
-		TitleBackground = Color3.new(178/255, 178/255, 178/255);
-	}
 
 	----------------------------------------------------------------
 	----------------------------------------------------------------
@@ -4719,11 +4788,11 @@ A GUI panel that displays the game hierarchy.
 			table.insert(rightClickMenuOptions, 'Insert Part')
 			table.insert(rightClickMenuOptions, 'Insert Object')
 		end
-		
+
 		if ReplicateChanges then
 			table.insert(rightClickMenuOptions, 'Claim')
 		end
-		
+
 		table.insert(rightClickMenuOptions, 'View')
 		table.insert(rightClickMenuOptions, 'Unview')
 
